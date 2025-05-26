@@ -1,8 +1,7 @@
-import startup
-import homepage
-
+from pages.homepage import home_page
+from pages.startup import start_up
 
 if __name__ == "__main__":
     print("|-- Welcome to Betterboxd! --|")
-    homepage.home_page("Brendan")
-    # homepage.home_page(startup.start_up())
+    home_page("Brendan")
+    # home_page(start_up())

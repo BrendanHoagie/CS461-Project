@@ -1,6 +1,5 @@
-from movie import Movie
-from utils import clear_terminal
-from utils import MOVIES
+import utilities.utils as utils
+from utilities.movie import Movie
 
 
 def home_page(user: str) -> None:
@@ -15,7 +14,7 @@ def home_page(user: str) -> None:
         {"Log out": quit},
     ]
 
-    clear_terminal()
+    utils.clear_terminal()
     print("|-- Betterboxd Home Page --|")
     print("What would you like to do?")
     while 1:
