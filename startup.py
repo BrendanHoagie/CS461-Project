@@ -1,7 +1,5 @@
+import utils
 import hashlib
-
-USERS = {"account1": "password123"}
-CURRENT_USER = None
 
 
 def start_up() -> str:
@@ -12,32 +10,20 @@ def start_up() -> str:
     Returns:
         a string representing the currently logged in user
     """
-    choices = {"Sign Up": sign_up, "Log In": log_in}
+    options = [{"Sign Up": sign_up}, {"Log In": log_in}]
 
+    utils.clear_terminal()
+    print("|-- Welcome to Betterboxd --|")
     print("What would you like to do?")
     while 1:
-        i = 1
-        for k in choices:
-            print(f"{i}. {k}")
-            i += 1
+        for i, e in enumerate(options):
+            print(f"{i + 1}. {list(e.keys())[0]}")
         try:
-            return choices.get(int(input(f"Enter a number 1-{i - 1}: ")))()
-
-        # first three are for debugging, in release can be just general exception w/o debug print
-        except KeyError as ke:
-            print(f"DEBUG KEY ERROR: {ke}")
-            print("Unrecognized input, please try again")
-
-        except ValueError as ve:
-            print(f"DEBUG VALUE ERROR: {ve}")
-            print("Unrecognized input, please try again")
-
-        except TypeError as te:
-            print(f"DEBUG TYPE ERROR: {te}")
-            print("Unrecognized input, please try again")
-
-        except Exception as e:
-            print(f"DEBUG EXCEPTION: {e}")
+            choice = int(input(f"Enter a number 1-{i + 1}: ")) - 1
+            if choice < 0:
+                raise ValueError
+            return list(options[choice].values())[0]()
+        except Exception:
             print("Unrecognized input, please try again")
 
 
@@ -48,31 +34,36 @@ def sign_up() -> str:
     Returns:
         a string representing the currently logged in user
     """
-    username, password = ""
+    username = password = ""
     username_max_length = 32
     password_max_length = 64  # are these values right?
 
+    utils.clear_terminal()
+    print("|-- Sign Up for Betterboxd --|")
+
     # get username
     while 1:
-        username = input("Enter your username (max 32 characters): ")
-        if len(username) > username_max_length:
+        username = input("Enter your username (max 32 characters): ").lower()
+        if len(username) <= username_max_length:
             # replace me with SQL query
-            if not username in USERS.keys:
+            if not utils.user_exists(username):
                 break
-        print("Sorry, that username is too long, please try again")
+            print("Sorry, a user with that name already exists, please choose another one")
+        else:
+            print("Sorry, that username is too long, please try again")
 
     # get password
     while 1:
         password = input("Enter your password (max 32 characters): ")
-        if len(password) > password_max_length:
+        if len(password) <= password_max_length:
             break
         print("Sorry, that password is too long, please try again")
 
     # hash password
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
-    # enter to db
-    USERS[username] = hashed_password
+    # replace me with SQL add to database
+    utils.add_to_users(username, hashed_password)
     return username
 
 
@@ -87,13 +78,17 @@ def log_in() -> str:
     failed_attempts = 0
     max_failed_attempts = 3
 
-    ### May want to restructure this to do just 1 SQL lookup instead of 2
+    # TODO: May want to restructure this to do just 1 SQL lookup instead of 2
+
+    utils.clear_terminal()
+    print("|-- Log In To Betterboxd --|")
 
     # get the username
     while 1:
         username = input("Enter your username: ")
+
         # replace me with an SQL lookup
-        if username in USERS.keys:
+        if utils.user_exists(username):
             break
 
         print("User not found, try again")
@@ -104,9 +99,8 @@ def log_in() -> str:
             print(
                 f"Username lookup failed {failed_attempts} times, would you like to create an account instead?"
             )
-            username = input("Type 1 for yes, anything else to keep trying: ")
-            if username == "1":
-                sign_up()
+            if input("Type 1 for yes, anything else to keep trying: ") == "1":
+                return sign_up()
             failed_attempts = 0
     failed_attempts = 0
 
@@ -114,11 +108,12 @@ def log_in() -> str:
     while 1:
         password = input("Enter your password: ")
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
         # replace me with an SQL lookup
-        if hashed_password == USERS[username]:
+        if utils.password_correct(username, hashed_password):
             break
 
-        print("incorrect password, try again")
+        print("Incorrect password, try again")
         failed_attempts += 1
 
         # if they fail too many times let them go back
@@ -126,9 +121,8 @@ def log_in() -> str:
             print(
                 f"Username lookup failed {failed_attempts} times, would you like to create an account instead?"
             )
-            password = input("Type 1 for yes, anything else to keep trying: ")
-            if password == "1":
-                sign_up()
+            if input("Type 1 for yes, anything else to keep trying: ") == "1":
+                return sign_up()
             failed_attempts = 0
 
     # treat them as logged in
