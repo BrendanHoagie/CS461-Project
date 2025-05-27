@@ -1,23 +1,25 @@
-from typing import Dict, List, Self
-import utils
+from typing import Dict, List
+import utilities.utils as utils
 
 
 class Movie:
+    _movie_id_counter = 0
+
     def __init__(
         self,
-        id: int,
-        name: str = None,
-        genres: List[str] = None,
-        runtime: int = None,
-        crew: Dict[str, List[str]] = None,
-        score: List[str] = None,
+        title: str,
+        genres: List[str],
+        runtime: int,
+        crew: Dict[str, List[str]],
+        score: List[str],
         star_ratings: List[float] = None,
         text_reviews: Dict[int, List[str]] = None,
     ):
-        self._id = id
-        self._name = name
+        self._movie_id_counter += 1
+        self._id = self._movie_id_counter
+        self._title = title
         self._genres = genres
-        self.runtime = runtime
+        self._runtime = runtime
         self._crew = crew
         self._score = score
         self._star_ratings = star_ratings
@@ -25,11 +27,11 @@ class Movie:
 
     def get_id(self) -> int:
         """Getter for id"""
-        return self._name
+        return self._title
 
-    def get_name(self) -> str:
-        """Getter for name"""
-        return self._name
+    def get_title(self) -> str:
+        """Getter for title"""
+        return self._title
 
     def get_genres(self) -> List[str]:
         """Getter for genre"""
@@ -76,7 +78,10 @@ class Movie:
 
     def calculate_rating(self) -> float:
         """Determines aggregated star rating"""
-        return sum(self._star_ratings) / len(self._star_ratings)
+        try:
+            return sum(self._star_ratings) / len(self._star_ratings)
+        except ZeroDivisionError:
+            return 0.0
 
     def get_review_by_user_id(self, user_id: int) -> List[str] | None:
         """Given a user ID, return any reviews by that account
@@ -85,3 +90,28 @@ class Movie:
             user_id - an int representing which user we're looking at
         """
         return self._text_reviews.get(user_id, None)
+
+    def pprint(self) -> None:
+        """Pretty print the movie class"""
+        print(f"ID: {self._id}")
+        print(f"Title: {self._title}")
+        print(f"Genres:")
+        for g in self._genres:
+            print(f"\t{g}")
+        print(f"Run time: {self._runtime}")
+        print(f"Crew:")
+        for k, v in self._crew.items():
+            print(f"\t{k}: {v}")
+        print(f"Score:")
+        for s in self._score:
+            print(f"\t {s}")
+        print(f"Star Rating (calculated): {self.calculate_rating()}")
+        print(f"Star Rating (raw):", end=" ")
+        for r in self._star_ratings:
+            print(r, end=" ")
+        print()
+        print("Text Reviews: ")
+        for k, v in self._text_reviews.items():
+            print(f"\tReviews from user {k}:")
+            for i, r in enumerate(v):
+                print(f"\t\t{i}. {r}")

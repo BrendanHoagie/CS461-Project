@@ -2,16 +2,14 @@ import utilities.utils as utils
 import hashlib
 
 
-def start_up() -> str:
+def start_up():
     """Startup function for Betterboxd
     Acts as the entry point into the app, according to the flowchart,
     takes user input and handles unrecognized errors
-
-    Returns:
-        a string representing the currently logged in user
     """
     options = [{"Sign Up": sign_up}, {"Log In": log_in}]
 
+    utils.set_up_database()
     utils.clear_terminal()
     print("|-- Welcome to Betterboxd --|")
     print("What would you like to do?")
@@ -22,7 +20,8 @@ def start_up() -> str:
             choice = int(input(f"Enter a number 1-{i + 1}: ")) - 1
             if choice < 0:
                 raise ValueError
-            return list(options[choice].values())[0]()
+            user = list(options[choice].values())[0]().lower()
+            utils.set_current_user(user)
         except Exception:
             print("Unrecognized input, please try again")
 
