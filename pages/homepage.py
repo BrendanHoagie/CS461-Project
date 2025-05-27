@@ -124,7 +124,7 @@ def log_movie() -> None:
 
     # add the movie, then log it
     new_movie = Movie(title, genres, runtime, crew, score)
-    utils.add_movie_to_database(new_movie.get_id())
+    utils.add_movie_to_database(new_movie)
     log(new_movie.get_id())
 
 

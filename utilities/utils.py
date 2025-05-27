@@ -149,4 +149,9 @@ def add_log(movie_id: int, rating: float, review: str) -> None:
 
 
 def add_movie_to_database(mov: Movie) -> None:
-    """Adds a movie to the database"""
+    """Adds a movie to the database
+
+    Args:
+        mov - a movie object to be added to database
+    """
+    _MOVIES.append(mov)
