@@ -10,14 +10,14 @@ class User:
         self,
         username: str,
         password: str,
-        fav_movie: int = None,
+        fav_movie_id: int = None,
         collections: List[Collection] = None,
     ):
         self._user_id_counter += 1
         self._id = self._user_id_counter
         self._username = username
         self._password = password
-        self._fav_movie_id = fav_movie
+        self._fav_movie_id = fav_movie_id
         self._collections = collections
 
     def get_id(self) -> int:
@@ -27,6 +27,15 @@ class User:
     def get_username(self) -> str:
         """Getter for username"""
         return self._username
+
+    def check_password(self, password: str) -> bool:
+        """Checks to see if a given password is the user's password
+        Offloads repsponsibility of checking passwords to the User object, obscuring implementation
+
+        Args:
+            password - a string containing a possible password to be checked
+        """
+        return self._password == password
 
     def set_password(self, password):
         """Setter for password.

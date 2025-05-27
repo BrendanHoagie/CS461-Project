@@ -1,3 +1,4 @@
+import hashlib
 import utilities.utils as utils
 from utilities.movie import Movie
 
@@ -10,9 +11,10 @@ def home_page(override: bool) -> None:
         override - a dev argument to override the login panic, remove for release
     """
     options = [
-        {"Log A Movie": log_movie},
+        {"Log a movie": log_movie},
+        {"Add a movie to the database": add_movie},
         {"Search the catalog": search},
-        {"View and edit profile": edit},
+        {"View and edit profile": view_and_edit},
         {"View my lists": lists},
         {"Log out": quit},
     ]
@@ -25,25 +27,13 @@ def home_page(override: bool) -> None:
         utils.clear_terminal()
         print("|-- Betterboxd Home Page --|")
         print("What would you like to do?")
-        for i, e in enumerate(options):
-            print(f"{i + 1}. {list(e.keys())[0]}")
-        try:
-            choice = int(input(f"Enter a number 1-{i + 1}: ")) - 1
-            if choice < 0:
-                raise ValueError
-            list(options[choice].values())[0]()
-        except Exception:
-            print("Unrecognized input, please try again")
+        utils.take_cli_input_with_options(options)()
 
 
 def log_movie() -> None:
     """Log a movie on your profile
     Handles user input, updates the database to add a movie, updates the database to change star values
     """
-    genres = []
-    runtime = 0
-    crew = {}
-    score = []
 
     def log(movie_id: int) -> None:
         """Handles logging the movie once we know it's in the database
@@ -81,8 +71,30 @@ def log_movie() -> None:
 
     # if we need to add the movie
     print(f"We couldn't find the movie {title} in our database, would you like to add it?")
-    if input("Type 1 for yes, anything else to return to homepage: ") != "1":
-        return
+    if input("Type 1 for yes, anything else to return to homepage: ") == "1":
+        log(add_movie().get_id())
+
+
+def add_movie() -> Movie:
+    """Add a movie to the database
+
+    Returns:
+        a Movie object representing the new movie
+    """
+
+    title = ""
+    id = -1
+    genres = []
+    runtime = 0
+    crew = {}
+    score = []
+
+    while id is not None:
+        title = input("Enter movie name: ")
+        if id := utils.search_for_movie_by_title(title):
+            print(
+                "That movie already exists in the database. If there is a duplicate name, try adding the year afterwards in parenthesis"
+            )
 
     # get list of genres
     raw_genre = input(
@@ -128,12 +140,119 @@ def log_movie() -> None:
     log(new_movie.get_id())
 
 
-def search():
+def search() -> None:
     pass
 
 
-def edit():
-    pass
+def view_and_edit() -> None:
+    """Displays info about the user profile, allows you to change it"""
+
+    class GoBackException(Exception):
+        """Custom error type local to this function.
+        Raised so that this function knows to quit out to home page
+        """
+
+        def __init__(self):
+            super().__init__()
+
+    def display_profile() -> None:
+        """Displays a user's profile"""
+
+        utils.clear_terminal()
+        user = utils.get_current_user()
+        print(f"|__ {user.get_username()}'s Profile --|")
+        print(f"Favorite Movie: ", end="")
+        if user.get_fav_movie_id() is None:
+            print("Has not been chosen yet")
+        else:
+            print(f"{utils.search_for_movie_by_id(user.get_fav_movie_id()).get_title()}")
+        print()
+        print(f"Has created {len(user.get_collections())} lists")
+        input("Type anthing to return to the account page: ")
+        return
+
+    def set_favorite() -> None:
+        """Search for a movie & set it as favorite, add it to database if it doesn't yet exist"""
+
+        utils.clear_terminal()
+        user = utils.get_current_user()
+        title = input("Enter the name of a movie: ")
+        if id := utils.search_for_movie_by_title(title):
+            user.set_fav_movie_id(id)
+            return
+
+        print(f"We couldn't find the movie {title} in our database, would you like to add it?")
+        if input("Type 1 for yes, anything else to return to the account page: ") == "1":
+            user.set_fav_movie_id(add_movie().get_id())
+
+    def change_password() -> None:
+        """Updates a user's password"""
+
+        user = utils.get_current_user()
+        password = ""
+        utils.clear_terminal()
+        while 1:
+            password = input("Enter your password (max 32 characters): ")
+            if len(password) <= utils.MAX_PASSWORD_LENGTH:
+                break
+            print("Sorry, that password is too long, please try again")
+
+        # hash password
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
+        # update password (replace w/ sql)
+        user.set_password(hashed_password)
+
+    def delete_account() -> None:
+        """Deletes the account and logs the user out
+
+        Side Effects:
+            exits the application
+        """
+
+        utils.clear_terminal()
+        user = utils.get_current_user()
+        password = ""
+        num_attempts = 0
+        while 1:
+            password = input(
+                "Enter your password to confirm that you'd like to delete your account and log out: "
+            )
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            if user.check_password(hashed_password):
+                utils.delete_current_user()
+                quit()
+
+            print("Sorry, that password does not match, please try again")
+            num_attempts += 1
+            if num_attempts == 3:
+                print(
+                    f"You've entered the wrong password {num_attempts} times, would you like to keep trying?"
+                )
+                if input("Type 1 for yes, anything else to return to the account page: ") == "1":
+                    return
+                num_attempts = 0
+
+    def go_back() -> None:
+        """Raises GoBackException so the function knows to return to the homepage menu"""
+        raise GoBackException
+
+    options = [
+        {"Display profile information": display_profile},
+        {"Choose a favorite movie": set_favorite},
+        {"Change password": change_password},
+        {"Delete account": delete_account},
+        {"Go back": go_back},
+    ]
+
+    while 1:
+        utils.clear_terminal()
+        print("|-- Account Page --|")
+        print("What would you like to do?")
+        try:
+            utils.take_cli_input_with_options(options)()
+        except GoBackException:
+            return
 
 
 def lists():

@@ -1,4 +1,5 @@
 import os
+from typing import Dict, List
 from utilities.user import User
 from utilities.movie import Movie
 
@@ -8,6 +9,10 @@ _CURRENT_USER = None
 # fake DBs for testing
 _USERS = []
 _MOVIES = []
+
+# constants
+MAX_PASSWORD_LENGTH = 64
+MAX_USERNAME_LENGTH = 32
 
 
 def set_up_database() -> None:
@@ -70,6 +75,28 @@ def clear_terminal() -> None:
     os.system("cls" if os.name == "nt" else "clear")
 
 
+def take_cli_input_with_options(options: List[Dict[str, callable]]) -> callable:
+    """Displays a list of otions then handles CLI input.
+    Uses a standard system where options are stored as a list of dictionaries
+
+    Args:
+        options - a list containing dictionaries, where each key-value pair is a string and a function
+
+    Returns:
+        the chosen function from the options list
+    """
+    while 1:
+        for i, e in enumerate(options):
+            print(f"{i + 1}. {list(e.keys())[0]}")
+        try:
+            choice = int(input(f"Enter a number 1-{i + 1}: ")) - 1
+            if choice < 0:
+                raise ValueError
+            return list(options[choice].values())[0]
+        except Exception:
+            print("Unrecognized input, please try again")
+
+
 def set_current_user(user: str) -> None:
     """Sets global current user, acts as a token for the session"""
     for u in _USERS:
@@ -80,6 +107,13 @@ def set_current_user(user: str) -> None:
 def get_current_user() -> User | None:
     """Gets the user currently logged in"""
     return _CURRENT_USER
+
+
+def delete_current_user() -> None:
+    """Deletes the current user from the database and un-sets current user.
+    Will break many parts of the homepage, use carefully
+    """
+    _USERS.remove(_CURRENT_USER)
 
 
 def add_to_users(username: str, password: str) -> None:
@@ -130,6 +164,21 @@ def search_for_movie_by_title(title: str) -> int | None:
     for m in _MOVIES:
         if m.get_name().lower() == title.lower():
             return m.get_id()
+    return None
+
+
+def search_for_movie_by_id(id: int) -> Movie | None:
+    """Return a movie given its id
+
+    Args:
+        id - an int representing the id of a movie in the database
+
+    Returns:
+        a Movie object if the movie was found, else None
+    """
+    for m in _MOVIES:
+        if m.get_id() == id:
+            return m
     return None
 
 

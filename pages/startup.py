@@ -7,23 +7,17 @@ def start_up():
     Acts as the entry point into the app, according to the flowchart,
     takes user input and handles unrecognized errors
     """
-    options = [{"Sign Up": sign_up}, {"Log In": log_in}]
+    options = [
+        {"Sign Up": sign_up},
+        {"Log In": log_in},
+    ]
 
     utils.set_up_database()
     utils.clear_terminal()
     print("|-- Welcome to Betterboxd --|")
     print("What would you like to do?")
-    while 1:
-        for i, e in enumerate(options):
-            print(f"{i + 1}. {list(e.keys())[0]}")
-        try:
-            choice = int(input(f"Enter a number 1-{i + 1}: ")) - 1
-            if choice < 0:
-                raise ValueError
-            user = list(options[choice].values())[0]().lower()
-            utils.set_current_user(user)
-        except Exception:
-            print("Unrecognized input, please try again")
+    user = utils.take_cli_input_with_options(options)().lower()
+    utils.set_current_user(user)
 
 
 def sign_up() -> str:
@@ -34,8 +28,6 @@ def sign_up() -> str:
         a string representing the currently logged in user
     """
     username = password = ""
-    username_max_length = 32
-    password_max_length = 64  # are these values right?
 
     utils.clear_terminal()
     print("|-- Sign Up for Betterboxd --|")
@@ -43,7 +35,7 @@ def sign_up() -> str:
     # get username
     while 1:
         username = input("Enter your username (max 32 characters): ").lower()
-        if len(username) <= username_max_length:
+        if len(username) <= utils.MAX_USERNAME_LENGTH:
             # replace me with SQL query
             if not utils.user_exists(username):
                 break
@@ -54,7 +46,7 @@ def sign_up() -> str:
     # get password
     while 1:
         password = input("Enter your password (max 32 characters): ")
-        if len(password) <= password_max_length:
+        if len(password) <= utils.MAX_PASSWORD_LENGTH:
             break
         print("Sorry, that password is too long, please try again")
 
