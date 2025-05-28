@@ -264,6 +264,10 @@ def view_and_edit() -> None:
 def lists() -> None:
     """Displays user created list, allows for creation of lists"""
 
+    def _go_back() -> None:
+        """Raises GoBackException so the function knows to return to the homepage menu"""
+        raise utils.GoBackException
+
     def _create_helper(id: int, title: str, new_list_size: int) -> int:
         """Helper for _create_list, handles getting the ranking
 
@@ -329,16 +333,146 @@ def lists() -> None:
         new_collection = Collection(list_name, new_list)
         utils.get_current_user().add_new_collection(new_collection)
 
-    def _view_all_lists() -> None:
-        pass
+    def _view_rankings() -> None:
+        """Sub-function of _view_lists, displays the rankings of a single collection"""
+        choice = -1
 
-    def _go_back() -> None:
-        """Raises GoBackException so the function knows to return to the homepage menu"""
-        raise utils.GoBackException
+        utils.clear_terminal()
+        print("|-- Pick a List to View --|")
+        collections = utils.get_current_user().get_collections()
+        for i, c in enumerate(collections):
+            print(f"{i + 1}. {c.get_name()}")
+        print()
+
+        while 1:
+            try:
+                choice = int(input(f"Enter a number 1-{i}: "))
+                if choice < 1 or choice > i:
+                    raise Exception
+            except Exception:
+                print("Unrecognized input, please try again")
+
+        collections[choice].display_collection()
+        input("Type anything to return to the list page: ")
+
+    def _edit_list() -> None:
+        """Sub-function for _view_lists, chooses a specific list and allows a user to edit it"""
+
+        choice = -1
+        new_index = -1
+
+        utils.clear_terminal()
+        print("|-- Pick a List to Edit --|")
+        collections = utils.get_current_user().get_collections()
+        for i, c in enumerate(collections):
+            print(f"{i + 1}. {c.get_name()}")
+        print()
+
+        while 1:
+            try:
+                choice = int(input(f"Enter a number 1-{i}: "))
+                if choice < 1 or choice > i:
+                    raise Exception
+            except Exception:
+                print("Unrecognized input, please try again")
+
+        collection = collections[choice - 1]
+
+        # name
+        print(f"Would you like to change {collection.get_name()}'s name?")
+        if input("Type 1 for yes, anything else to continue: ") == "1":
+            collection.set_name(input("Enter the new name of the list: "))
+
+        # rankings
+        print(f"Would you like to change {collection.get_name()}'s rankings?")
+        if input("Type 1 for yes, anything else to continue: ") != "1":
+            return
+
+        while 1:
+            # display all movies & rankings
+            for i, c in enumerate(collection.get_lst()):
+                print(f"{i}. {utils.search_for_movie_by_id(c)}")
+
+            # get input
+            while 1:
+                try:
+                    choice = int(input(f"Enter a number 1-{i} to change: "))
+                    if choice < 1 or choice > i:
+                        raise Exception
+                    choice -= 1
+                    break
+                except Exception:
+                    print("Unrecognized input, please try again")
+
+            # get new ranking
+            while 1:
+                try:
+                    new_index = int(input(f"Enter the new ranking (a number 1-{i}): "))
+                    if new_index < 1 or new_index > i:
+                        raise Exception
+                    new_index -= 1
+                    break
+                except Exception:
+                    print("Unrecognized input, please try again")
+
+            # update list and leave/keep going
+            collection.change_index(choice, new_index)
+            print(f"Would you like to continue updating rankings?")
+            if input("Type 1 for yes, anything else to finish: ") != "1":
+                break
+
+    def _delete_list() -> None:
+        """Sub-function for _view_lists, deletes a list from a user's collections"""
+        choice = -1
+
+        utils.clear_terminal()
+        print("|-- Pick a List to Delete --|")
+        collections = utils.get_current_user().get_collections()
+        for i, c in enumerate(collections):
+            print(f"{i + 1}. {c.get_name()}")
+        print()
+
+        while 1:
+            try:
+                choice = int(input(f"Enter a number 1-{i}: "))
+                if choice < 1 or choice > i:
+                    raise Exception
+                choice -= 1
+                break
+            except Exception:
+                print("Unrecognized input, please try again")
+
+        collection = collections[choice]
+        print(f"Are you sure you want to delete {collection.get_name()}?")
+        if input("Type 1 to confirm deletion, anything else to go back to the list menu: ") == "1":
+            utils.get_current_user().delete_collection(collection)
+
+    def _view_lists() -> None:
+        """Manager for sub functions, displays all lists, lets the user take a closer look or edit a specific one"""
+
+        options = [
+            {"View the rankings in a specific list": _view_rankings},
+            {"Edit a list": _edit_list},
+            {"Delete a list": _delete_list},
+            {"Go back": _go_back},
+        ]
+
+        utils.clear_terminal()
+        print("|-- Lists --|")
+        collections = utils.get_current_user().get_collections()
+        for i, c in enumerate(collections):
+            print(f"{i + 1}. {c.get_name()}")
+        print()
+
+        while 1:
+            try:
+                utils.take_cli_input_with_options(options)()
+            except utils.GoBackException:
+                return
 
     options = [
         {"Create a new list": _create_list},
-        {"Select an existing list to view": _view_all_lists},
+        {"View all lists": _view_lists},
         {"Go back": _go_back},
     ]
 
