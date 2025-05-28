@@ -155,7 +155,71 @@ def add_movie(name: str = None) -> Movie | None:
 
 
 def search() -> None:
-    pass
+    """Allows the user to set a filter and search within that category"""
+
+    def _sort_genre() -> None:
+        """Searches by genre"""
+        utils.clear_terminal()
+        print("|-- Seach Movie by Genre --|")
+        term = input("Enter your search term: ")
+        movies = utils.search_by_genre(term)
+        if movies:
+            for m in movies:
+                m.display_movie()
+                print()
+        else:
+            print(f'Sorry, could not find any movies where the genre matched the term "{term}"')
+        input("Type anything to return to search menu: ")
+
+    def _sort_crew() -> None:
+        """Searches by crew members"""
+        utils.clear_terminal()
+        print("|-- Seach Movie by Crew --|")
+        term = input("Enter your search term: ")
+        movies = utils.search_by_crew(term)
+        if movies:
+            for m in movies:
+                m.display_movie()
+                print()
+        else:
+            print(f'Sorry, could not find any movies where the crew included the "{term}"')
+        input("Type anything to return to search menu: ")
+
+    def _sort_score() -> None:
+        """Searches by songs"""
+        utils.clear_terminal()
+        print("|-- Seach Movie by Score --|")
+        term = input("Enter your search term: ")
+        movies = utils.search_by_score(term)
+        if movies:
+            for m in movies:
+                m.display_movie()
+                print()
+        else:
+            print(
+                f'Sorry, could not find any movies where the score included songs with "{term}" in the title'
+            )
+        input("Type anything to return to search menu: ")
+
+    def _go_back() -> None:
+        """Raises GoBackException so the function knows to return to the homepage menu"""
+        raise utils.GoBackException
+
+    options = [
+        {"Search by genre": _sort_genre},
+        {"Search by crew": _sort_crew},
+        {"Search by score": _sort_score},
+        {"Go back": _go_back},
+    ]
+
+    while 1:
+        utils.clear_terminal()
+        print("|-- Search the Database --|")
+        print("What would you like to search by?")
+        try:
+            utils.take_cli_input_with_options(options)()
+        except utils.GoBackException:
+            return
 
 
 def view_and_edit() -> None:

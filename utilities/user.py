@@ -1,6 +1,5 @@
 from typing import List
 from utilities.collection import Collection
-import utilities.utils as utils
 
 
 class User:
