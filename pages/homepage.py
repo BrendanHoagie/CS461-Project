@@ -4,12 +4,9 @@ from utilities.movie import Movie
 from utilities.collection import Collection
 
 
-def home_page(override: bool) -> None:
+def home_page() -> None:
     """Betterboxd home page, where a user can choose what to do on the app
     Handles user input, redirects to child functions
-
-    Args:
-        override - a dev argument to override the login panic, remove for release
     """
     options = [
         {"Log a movie": log_movie},
@@ -20,7 +17,7 @@ def home_page(override: bool) -> None:
         {"Log out": quit},
     ]
 
-    if utils.get_current_user() and override is not True:
+    if utils.get_current_user():
         print("Error-- user made it to homepage without logging in. Exiting")
         quit(1)
 
@@ -66,7 +63,7 @@ def log_movie() -> None:
     title = input("Enter movie name: ")
 
     # if we find the movie
-    if id := utils.search_for_movie_by_title(title):
+    if id := utils.search_for_movie_by_title_exact(title):
         _log(id)
         return
 
@@ -97,7 +94,7 @@ def add_movie(name: str = None) -> Movie | None:
 
     while id is not None:
         title = input("Enter movie name: ") if name is None else name
-        if id := utils.search_for_movie_by_title(title):
+        if id := utils.search_for_movie_by_title_exact(title):
             print(
                 "That movie already exists in the database. If there is a duplicate name, try adding the year afterwards in parenthesis"
             )
@@ -156,6 +153,20 @@ def add_movie(name: str = None) -> Movie | None:
 def search() -> None:
     """Allows the user to set a filter and search within that category"""
 
+    def _sort_title() -> None:
+        """Searches by title"""
+        utils.clear_terminal()
+        print("|-- Seach Movie by Title --|")
+        term = input("Enter your search term: ")
+        movies = utils.search_by_title_inexact(term)
+        if movies:
+            for m in movies:
+                m.display_movie()
+                print()
+        else:
+            print(f'Sorry, could not find any movies with "{term}" in the title')
+        input("Type anything to return to search menu: ")
+
     def _sort_genre() -> None:
         """Searches by genre"""
         utils.clear_terminal()
@@ -205,6 +216,7 @@ def search() -> None:
         raise utils.GoBackException
 
     options = [
+        {"Search by title": _sort_title},
         {"Search by genre": _sort_genre},
         {"Search by crew": _sort_crew},
         {"Search by score": _sort_score},
@@ -246,7 +258,7 @@ def view_and_edit() -> None:
         utils.clear_terminal()
         user = utils.get_current_user()
         title = input("Enter the name of a movie: ")
-        if id := utils.search_for_movie_by_title(title):
+        if id := utils.search_for_movie_by_title_exact(title):
             user.set_fav_movie_id(id)
             return
 
@@ -366,7 +378,7 @@ def lists() -> None:
             title = input("Enter the name of a movie to add to the list: ")
 
             # movie is in the database
-            if id := utils.search_for_movie_by_title(title):
+            if id := utils.search_for_movie_by_title_exact(title):
                 index = _create_helper(id, title, new_list_size)
                 new_list.insert(index, id)
                 new_list_size += 1

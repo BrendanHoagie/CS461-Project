@@ -43,7 +43,7 @@ class Movie:
 
     def get_crew(self) -> Dict[str, List[str]]:
         """Getter for crew"""
-        return self._genres
+        return self._crew
 
     def get_score(self) -> List[str]:
         """Getter for score"""

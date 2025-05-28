@@ -140,7 +140,7 @@ def add_to_users(username: str, password: str) -> None:
         username - a str representing the queried username
         password - a str representing the entered password
     """
-    _USERS[username] = password
+    _USERS.append(User(username, password))
 
 
 def user_exists(username: str) -> bool:
@@ -152,7 +152,10 @@ def user_exists(username: str) -> bool:
     Returns:
         a bool representing if the user exists in the database
     """
-    return username in _USERS
+    for u in _USERS:
+        if u.get_username().lower() == username.lower():
+            return True
+    return False
 
 
 def password_correct(username: str, password: str) -> bool:
@@ -166,11 +169,14 @@ def password_correct(username: str, password: str) -> bool:
     Returns:
         a bool representing if the password is correct
     """
-    return password == _USERS[username]
+    for u in _USERS:
+        if u.get_username().lower() == username.lower():
+            return u.check_password(password)
+    return False
 
 
-def search_for_movie_by_title(title: str) -> int | None:
-    """Query if a given movie title is in the database
+def search_for_movie_by_title_exact(title: str) -> int | None:
+    """Query if a given movie title is in the database (exact match)
 
     Args:
         title - a string representing the title of a movie
@@ -197,6 +203,17 @@ def search_for_movie_by_id(id: int) -> Movie | None:
         if m.get_id() == id:
             return m
     return None
+
+
+def search_by_title_inexact(term: str) -> List[Movie] | None:
+    """Returns search results that include the term in the move title (inexact match)
+    Args:
+        term - a string we are filtering by
+
+    Returns:
+        a list of Movie objects that have the search term in the title, may be None
+    """
+    return [m for m in _MOVIES if term.lower() in m.get_title().lower()]
 
 
 def search_by_genre(term: str) -> List[Movie] | None:
