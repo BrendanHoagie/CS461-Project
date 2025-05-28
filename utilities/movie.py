@@ -91,7 +91,7 @@ class Movie:
         """
         return self._text_reviews.get(user_id, None)
 
-    def pprint(self) -> None:
+    def display_movie(self) -> None:
         """Pretty print the movie class"""
         print(f"ID: {self._id}")
         print(f"Title: {self._title}")

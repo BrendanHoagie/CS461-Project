@@ -1,6 +1,5 @@
 from typing import List
 from utilities.collection import Collection
-import utilities.utils as utils
 
 
 class User:
@@ -77,6 +76,15 @@ class User:
             collection - a list of Collection objects
         """
         self._collections.append(collections)
+
+    def delete_collection(self, collection: Collection) -> None:
+        """Deletes a collection from the user's collections.
+        Does no error checking
+
+        Args:
+            collection - a Collection object from collections to be removed
+        """
+        self._collections.remove(collection)
 
     def pprint(self) -> None:
         """Pretty print the user class"""

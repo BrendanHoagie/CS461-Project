@@ -51,9 +51,17 @@ def set_up_database() -> None:
             "Howard Hanks": ["Director", "Producer"],
             "Henry Mancini": ["Composer"],
         },
-        ["Theme from 'Hatari!'", "Baby Elephant Walk", "Just for Tonight"],
+        [
+            "Theme from 'Hatari!'",
+            "Baby Elephant Walk",
+            "Just for Tonight",
+        ],
         [1.5, 4.5, 3.0],
-        {1: ["I did not like it"], 2: ["I'm a big fan!", "I still really love it, man"], 3: []},
+        {
+            1: ["I did not like it"],
+            2: ["I'm a big fan!", "I still really love it, man"],
+            3: [],
+        },
     )
     u = Movie(
         "Unfrosted",
@@ -189,6 +197,42 @@ def search_for_movie_by_id(id: int) -> Movie | None:
         if m.get_id() == id:
             return m
     return None
+
+
+def search_by_genre(term: str) -> List[Movie] | None:
+    """Returns search results that include the term in the genre field
+
+    Args:
+        term - a string we are filtering by
+
+    Returns:
+        a list of Movie objects that have the search term in the genre field, may be None
+    """
+    return [m for m in _MOVIES if any(g.lower() == term.lower() for g in m.get_genres())]
+
+
+def search_by_crew(term: str) -> List[Movie] | None:
+    """Returns search results that include the term in the crew field
+
+    Args:
+        term - a string we are filtering by
+
+    Returns:
+        a list of Movie objects that have the search term in the crew field, may be None
+    """
+    return [m for m in _MOVIES if any(term.lower() in c.lower() for c in m.get_crew().keys())]
+
+
+def search_by_score(term: str) -> List[Movie] | None:
+    """Returns search results that include the term in any song titles of the score field
+
+    Args:
+        term - a string we are filtering by
+
+    Returns:
+        a list of Movie objects that have the search term in a song in the score field, may be None
+    """
+    return [m for m in _MOVIES if any(term.lower() in s.lower() for s in m.get_score())]
 
 
 def add_log(movie_id: int, rating: float, review: str) -> None:
