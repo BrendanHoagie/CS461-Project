@@ -1,6 +1,8 @@
 import hashlib
 import utilities.utils as utils
 from utilities.movie import Movie
+from utilities.collection import Collection
+from typing import List
 
 
 def home_page(override: bool) -> None:
@@ -35,7 +37,7 @@ def log_movie() -> None:
     Handles user input, updates the database to add a movie, updates the database to change star values
     """
 
-    def log(movie_id: int) -> None:
+    def _log(movie_id: int) -> None:
         """Handles logging the movie once we know it's in the database
 
         Args:
@@ -66,20 +68,25 @@ def log_movie() -> None:
 
     # if we find the movie
     if id := utils.search_for_movie_by_title(title):
-        log(id)
+        _log(id)
         return
 
     # if we need to add the movie
     print(f"We couldn't find the movie {title} in our database, would you like to add it?")
     if input("Type 1 for yes, anything else to return to homepage: ") == "1":
-        log(add_movie().get_id())
+        new_movie = add_movie(title)
+        if new_movie is None:
+            return
+        _log(new_movie.get_id())
 
 
-def add_movie() -> Movie:
+def add_movie(name: str = None) -> Movie | None:
     """Add a movie to the database
 
+    Args:
+        name - a string containing the name of the movie
     Returns:
-        a Movie object representing the new movie
+        a Movie object representing the new movie, or None if the user quits out early
     """
 
     title = ""
@@ -90,11 +97,18 @@ def add_movie() -> Movie:
     score = []
 
     while id is not None:
-        title = input("Enter movie name: ")
+        title = input("Enter movie name: ") if name is None else name
         if id := utils.search_for_movie_by_title(title):
             print(
                 "That movie already exists in the database. If there is a duplicate name, try adding the year afterwards in parenthesis"
             )
+            if (
+                input(
+                    "Would you like to continue adding a movie? Type 1 for yes, anything else to return to homepage: "
+                )
+                == "1"
+            ):
+                return None
 
     # get list of genres
     raw_genre = input(
@@ -134,10 +148,10 @@ def add_movie() -> Movie:
         if input("Type 1 for yes, anything else to finish adding crew members: ") != "1":
             break
 
-    # add the movie, then log it
+    # add the movie
     new_movie = Movie(title, genres, runtime, crew, score)
     utils.add_movie_to_database(new_movie)
-    log(new_movie.get_id())
+    return new_movie
 
 
 def search() -> None:
@@ -147,15 +161,7 @@ def search() -> None:
 def view_and_edit() -> None:
     """Displays info about the user profile, allows you to change it"""
 
-    class GoBackException(Exception):
-        """Custom error type local to this function.
-        Raised so that this function knows to quit out to home page
-        """
-
-        def __init__(self):
-            super().__init__()
-
-    def display_profile() -> None:
+    def _display_profile() -> None:
         """Displays a user's profile"""
 
         utils.clear_terminal()
@@ -171,7 +177,7 @@ def view_and_edit() -> None:
         input("Type anthing to return to the account page: ")
         return
 
-    def set_favorite() -> None:
+    def _set_favorite() -> None:
         """Search for a movie & set it as favorite, add it to database if it doesn't yet exist"""
 
         utils.clear_terminal()
@@ -185,7 +191,7 @@ def view_and_edit() -> None:
         if input("Type 1 for yes, anything else to return to the account page: ") == "1":
             user.set_fav_movie_id(add_movie().get_id())
 
-    def change_password() -> None:
+    def _change_password() -> None:
         """Updates a user's password"""
 
         user = utils.get_current_user()
@@ -203,7 +209,7 @@ def view_and_edit() -> None:
         # update password (replace w/ sql)
         user.set_password(hashed_password)
 
-    def delete_account() -> None:
+    def _delete_account() -> None:
         """Deletes the account and logs the user out
 
         Side Effects:
@@ -233,16 +239,16 @@ def view_and_edit() -> None:
                     return
                 num_attempts = 0
 
-    def go_back() -> None:
+    def _go_back() -> None:
         """Raises GoBackException so the function knows to return to the homepage menu"""
-        raise GoBackException
+        raise utils.GoBackException
 
     options = [
-        {"Display profile information": display_profile},
-        {"Choose a favorite movie": set_favorite},
-        {"Change password": change_password},
-        {"Delete account": delete_account},
-        {"Go back": go_back},
+        {"Display profile information": _display_profile},
+        {"Choose a favorite movie": _set_favorite},
+        {"Change password": _change_password},
+        {"Delete account": _delete_account},
+        {"Go back": _go_back},
     ]
 
     while 1:
@@ -251,9 +257,95 @@ def view_and_edit() -> None:
         print("What would you like to do?")
         try:
             utils.take_cli_input_with_options(options)()
-        except GoBackException:
+        except utils.GoBackException:
             return
 
 
-def lists():
-    pass
+def lists() -> None:
+    """Displays user created list, allows for creation of lists"""
+
+    def _create_helper(id: int, title: str, new_list_size: int) -> int:
+        """Helper for _create_list, handles getting the ranking
+
+        Args:
+            id - the id of a movie in the database
+            title - a string containing the name of the movie
+            new_list_size - the size of new list
+
+        Returns:
+            an integer representing the chosen index
+        """
+        while 1:
+            try:
+                index = int(
+                    input(f"Enter your ranking of {title}, an integer 1-{new_list_size + 1}")
+                )
+                if index < 1:
+                    raise Exception
+                return index - 1
+            except Exception:
+                print("Unrecognized input, please try again")
+
+    def _create_list() -> None:
+        """Creates a new list and saves it to the user's profile"""
+
+        new_list = []
+        new_list_size = 0
+
+        utils.clear_terminal()
+        print("|-- Create a New List --|")
+        list_name = input("Enter the name of the list: ")
+        while 1:
+            title = input("Enter the name of a movie to add to the list: ")
+
+            # movie is in the database
+            if id := utils.search_for_movie_by_title(title):
+                index = _create_helper(id, title, new_list_size)
+                new_list.insert(index, id)
+                new_list_size += 1
+
+            # needs to be added
+            else:
+                print(
+                    f"We couldn't find the movie {title} in our database, would you like to add it?"
+                )
+                if (
+                    input(
+                        f"Type 1 for yes, anything else to skip and continue adding to {list_name}: "
+                    )
+                    == "1"
+                ):
+                    new_movie = add_movie(title)
+                    if new_movie is None:
+                        continue
+                    index = _create_helper(new_movie.get_id(), title, new_list_size)
+                    new_list.insert(index, new_movie.get_id())
+                    new_list_size += 1
+
+            print(f"Would you like to add another movie to the list?")
+            if input(f"Type 1 for yes, anything else to return to list viewer page: ") != "1":
+                break
+
+        new_collection = Collection(list_name, new_list)
+        utils.get_current_user().add_new_collection(new_collection)
+
+    def _view_all_lists() -> None:
+        pass
+
+    def _go_back() -> None:
+        """Raises GoBackException so the function knows to return to the homepage menu"""
+        raise utils.GoBackException
+
+    options = [
+        {"Create a new list": _create_list},
+        {"Select an existing list to view": _view_all_lists},
+        {"Go back": _go_back},
+    ]
+
+    while 1:
+        utils.clear_terminal()
+        print("|-- List Viewer --|")
+        try:
+            utils.take_cli_input_with_options(options)()
+        except utils.GoBackException:
+            return

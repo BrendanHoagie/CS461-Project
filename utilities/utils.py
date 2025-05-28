@@ -15,6 +15,15 @@ MAX_PASSWORD_LENGTH = 64
 MAX_USERNAME_LENGTH = 32
 
 
+class GoBackException(Exception):
+    """Custom error type local to this function.
+    Raised so that this function knows to quit out to home page
+    """
+
+    def __init__(self):
+        super().__init__()
+
+
 def set_up_database() -> None:
     """Create fake data for testing.
     In the real app, this is where we'd authenticate with SQL server.

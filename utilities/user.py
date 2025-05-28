@@ -11,7 +11,7 @@ class User:
         username: str,
         password: str,
         fav_movie_id: int = None,
-        collections: List[Collection] = None,
+        collections: List[Collection] = [],
     ):
         self._user_id_counter += 1
         self._id = self._user_id_counter
@@ -58,9 +58,25 @@ class User:
         """
         self._fav_movie_id = movie_id
 
-    def get_collections(self) -> int:
+    def get_collections(self) -> List[Collection]:
         """Getter for collections"""
         return self._collections
+
+    def set_collections(self, collections: List[Collection]) -> None:
+        """setter for collections
+
+        Args:
+            collection - a list of Collection objects
+        """
+        self._collections = collections
+
+    def add_new_collection(self, collections: List[Collection]) -> None:
+        """Adds a new collection to the user's collections
+
+        Args:
+            collection - a list of Collection objects
+        """
+        self._collections.append(collections)
 
     def pprint(self) -> None:
         """Pretty print the user class"""
