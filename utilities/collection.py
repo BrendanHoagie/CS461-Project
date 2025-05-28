@@ -1,5 +1,5 @@
 from typing import List
-from utilities.utils import search_for_movie_by_id
+import utilities.utils as utils
 from utilities.movie import Movie
 
 
@@ -44,7 +44,7 @@ class Collection:
         """Version of pretty print, shows each ranking next to each movie title"""
         print(f"|-- {self._name} --|")
         for i, movie_id in enumerate(self._lst):
-            mov = search_for_movie_by_id(movie_id)
+            mov = utils.search_for_movie_by_id(movie_id)
             if mov is None:
                 continue
             print(f"{i + 1}. {mov.get_title()}")

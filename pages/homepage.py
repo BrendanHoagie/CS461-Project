@@ -2,7 +2,6 @@ import hashlib
 import utilities.utils as utils
 from utilities.movie import Movie
 from utilities.collection import Collection
-from typing import List
 
 
 def home_page(override: bool) -> None:
