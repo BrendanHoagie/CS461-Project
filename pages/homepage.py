@@ -17,7 +17,7 @@ def home_page() -> None:
         {"Log out": quit},
     ]
 
-    if utils.get_current_user():
+    if not utils.get_current_user():
         print("Error-- user made it to homepage without logging in. Exiting")
         quit(1)
 
@@ -76,7 +76,7 @@ def log_movie() -> None:
         _log(new_movie.get_id())
 
 
-def add_movie(name: str = None) -> Movie | None:
+def add_movie(name: str = None) -> Movie:
     """Add a movie to the database
 
     Args:
@@ -119,11 +119,13 @@ def add_movie(name: str = None) -> Movie | None:
             runtime = int(input("Enter the runtime of the movie as an integer number of minutes: "))
             if runtime < 0:
                 print("Runtime must be at least 1 minute long, try again")
+            else:
+                break
         except Exception:
             print("Unrecognized input, try again")
 
     # Get the crew
-    print("Enter the crew:")
+    print("|-- Crew Entry --|")
     while 1:
         name = input("Enter the name of a crew member: ")
         raw_roles = input(
@@ -240,8 +242,9 @@ def view_and_edit() -> None:
         """Displays a user's profile"""
 
         utils.clear_terminal()
+        print("Displaying")
         user = utils.get_current_user()
-        print(f"|__ {user.get_username()}'s Profile --|")
+        print(f"|-- {user.get_username()}'s Profile --|")
         print(f"Favorite Movie: ", end="")
         if user.get_fav_movie_id() is None:
             print("Has not been chosen yet")

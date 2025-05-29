@@ -11,7 +11,7 @@ _USERS = []
 _MOVIES = []
 
 # constants
-MAX_PASSWORD_LENGTH = 64
+MAX_PASSWORD_LENGTH = 32
 MAX_USERNAME_LENGTH = 32
 
 
@@ -109,19 +109,22 @@ def take_cli_input_with_options(options: List[Dict[str, callable]]) -> callable:
             choice = int(input(f"Enter a number 1-{i + 1}: ")) - 1
             if choice < 0:
                 raise ValueError
-            return list(options[choice].values())[0]
+            else:
+                return list(options[choice].values())[0]
         except Exception:
             print("Unrecognized input, please try again")
 
 
 def set_current_user(user: str) -> None:
     """Sets global current user, acts as a token for the session"""
+    global _CURRENT_USER
+    
     for u in _USERS:
         if u.get_username().lower() == user:
             _CURRENT_USER = u
 
 
-def get_current_user() -> User | None:
+def get_current_user() -> User:
     """Gets the user currently logged in"""
     return _CURRENT_USER
 
@@ -140,6 +143,8 @@ def add_to_users(username: str, password: str) -> None:
         username - a str representing the queried username
         password - a str representing the entered password
     """
+    # REPLACE WITH QUERY TO ADD TO DATABASE
+    # USER INFO SHOULD ALREADY BE SANATAIZED BY THE SIGN UP FUNCTIONS
     _USERS.append(User(username, password))
 
 
@@ -152,6 +157,8 @@ def user_exists(username: str) -> bool:
     Returns:
         a bool representing if the user exists in the database
     """
+
+    # REPLACE WITH QUERY TO READ FROM DATAVASE
     for u in _USERS:
         if u.get_username().lower() == username.lower():
             return True
@@ -175,7 +182,7 @@ def password_correct(username: str, password: str) -> bool:
     return False
 
 
-def search_for_movie_by_title_exact(title: str) -> int | None:
+def search_for_movie_by_title_exact(title: str) -> int:
     """Query if a given movie title is in the database (exact match)
 
     Args:
@@ -185,12 +192,12 @@ def search_for_movie_by_title_exact(title: str) -> int | None:
         an int indicating the movie ID if a matching title was found, else None
     """
     for m in _MOVIES:
-        if m.get_name().lower() == title.lower():
+        if m.get_title().lower() == title.lower():
             return m.get_id()
     return None
 
 
-def search_for_movie_by_id(id: int) -> Movie | None:
+def search_for_movie_by_id(id: int) -> Movie:
     """Return a movie given its id
 
     Args:
@@ -205,7 +212,7 @@ def search_for_movie_by_id(id: int) -> Movie | None:
     return None
 
 
-def search_by_title_inexact(term: str) -> List[Movie] | None:
+def search_by_title_inexact(term: str) -> List[Movie]:
     """Returns search results that include the term in the move title (inexact match)
     Args:
         term - a string we are filtering by
@@ -216,7 +223,7 @@ def search_by_title_inexact(term: str) -> List[Movie] | None:
     return [m for m in _MOVIES if term.lower() in m.get_title().lower()]
 
 
-def search_by_genre(term: str) -> List[Movie] | None:
+def search_by_genre(term: str) -> List[Movie]:
     """Returns search results that include the term in the genre field
 
     Args:
@@ -228,7 +235,7 @@ def search_by_genre(term: str) -> List[Movie] | None:
     return [m for m in _MOVIES if any(g.lower() == term.lower() for g in m.get_genres())]
 
 
-def search_by_crew(term: str) -> List[Movie] | None:
+def search_by_crew(term: str) -> List[Movie]:
     """Returns search results that include the term in the crew field
 
     Args:
@@ -240,7 +247,7 @@ def search_by_crew(term: str) -> List[Movie] | None:
     return [m for m in _MOVIES if any(term.lower() in c.lower() for c in m.get_crew().keys())]
 
 
-def search_by_score(term: str) -> List[Movie] | None:
+def search_by_score(term: str) -> List[Movie]:
     """Returns search results that include the term in any song titles of the score field
 
     Args:

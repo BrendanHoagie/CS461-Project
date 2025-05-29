@@ -14,9 +14,10 @@ def start_up():
 
     utils.set_up_database()
     utils.clear_terminal()
-    print("|-- Welcome to Betterboxd --|")
     print("What would you like to do?")
     user = utils.take_cli_input_with_options(options)().lower()
+    testUser = utils.get_current_user()
+    #print(f"|__ {testUser.get_username()}'s Profile --|")
     utils.set_current_user(user)
 
 
@@ -36,7 +37,10 @@ def sign_up() -> str:
     while 1:
         username = input("Enter your username (max 32 characters): ").lower()
         if len(username) <= utils.MAX_USERNAME_LENGTH:
-            # replace me with SQL query
+            
+            # SANITIZE USER INPUT
+            # SQL QUERY TO CHECK FOR EXITING USERNAME
+            
             if not utils.user_exists(username):
                 break
             print("Sorry, a user with that name already exists, please choose another one")
@@ -53,7 +57,9 @@ def sign_up() -> str:
     # hash password
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
-    # replace me with SQL add to database
+    # SANITIZE USER PASSWORD
+    # SQL QUERY TO ADD PASSWORD
+
     utils.add_to_users(username, hashed_password)
     return username
 
@@ -79,6 +85,7 @@ def log_in() -> str:
         username = input("Enter your username: ")
 
         # replace me with an SQL lookup
+
         if utils.user_exists(username):
             break
 

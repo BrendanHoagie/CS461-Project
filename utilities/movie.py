@@ -83,7 +83,7 @@ class Movie:
         except ZeroDivisionError:
             return 0.0
 
-    def get_review_by_user_id(self, user_id: int) -> List[str] | None:
+    def get_review_by_user_id(self, user_id: int) -> List[str]:
         """Given a user ID, return any reviews by that account
 
         Args:
