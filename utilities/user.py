@@ -1,6 +1,9 @@
 from typing import List
 from utilities.collection import Collection
 
+# constants
+_DEFAULT_FAV_MOVIE = 25
+
 
 class User:
     _user_id_counter = 0

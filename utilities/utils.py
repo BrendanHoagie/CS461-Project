@@ -1,18 +1,34 @@
 import os
+import sys
 from typing import Dict, List
 from utilities.user import User
 from utilities.movie import Movie
+import mysql.connector
+
+# global database object
+_DB = None
+
+# list of all the tables in properly configured database
+_TABLES = [
+    "account",
+    "account_collections",
+    "collections",
+    "crew",
+    "crew_job",
+    "crew_movie",
+    "entry",
+    "movie",
+    "score",
+    "score_songs",
+]
 
 # global representing who is logged in
 _CURRENT_USER = None
 
-# fake DBs for testing
-_USERS = []
-_MOVIES = []
-
 # constants
 MAX_PASSWORD_LENGTH = 32
 MAX_USERNAME_LENGTH = 32
+DEFAULT_MOVIE_ID = 25  # fake/default movie, check when displaying profile
 
 
 class GoBackException(Exception):
@@ -25,66 +41,49 @@ class GoBackException(Exception):
 
 
 def set_up_database() -> None:
-    """Create fake data for testing.
-    In the real app, this is where we'd authenticate with SQL server.
-    Passwords:
-        brendan: hello
-        randy: test
-        dante: 123
-    """
+    """Sets up the database. Asks for host, username, and password for who is running the SQL database"""
+    global _DB
+    tables_in_db = []
+    host = user = password = ""
 
-    # setup fake users
-    b = User("brendan", "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824")
-    r = User("randy", "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08")
-    d = User("dante", "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3")
-    _USERS.append(b)
-    _USERS.append(r)
-    _USERS.append(d)
+    print("Let's make sure the database is set up correctly!")
+    host = input("Enter the host, default is localhost, press enter to accept default: ")
+    user = input("Enter the current user, default is root, press enter to accept default: ")
+    password = input("Enter the password for the current user: ")
 
-    # setup fake movies
-    h = Movie(
-        "Hatari!",
-        ["Adventure, Comedy"],
-        157,
-        {
-            "John Wayne": ["Actor", "Producer"],
-            "Howard Hanks": ["Director", "Producer"],
-            "Henry Mancini": ["Composer"],
-        },
-        [
-            "Theme from 'Hatari!'",
-            "Baby Elephant Walk",
-            "Just for Tonight",
-        ],
-        [1.5, 4.5, 3.0],
-        {
-            1: ["I did not like it"],
-            2: ["I'm a big fan!", "I still really love it, man"],
-            3: [],
-        },
-    )
-    u = Movie(
-        "Unfrosted",
-        ["Comedy", "Drama"],
-        93,
-        {
-            "Jerry Seinfeld": ["Actor", "Producer", "Director"],
-            "Melissa McCarthy": ["Actor"],
-            "Jim Gaffigan": ["Actor"],
-            "Christophe Beck": ["Composer"],
-            "Jimmy Fallon": ["Composer"],  # THIS IS REAL!!!!
-        },
-        [
-            'Sweet Morning Heat (from the Netflix Film "Unfrosted")',
-            "Battle Creek, 1963",
-            "Poop, Slap, and Smile",
-            "The Bowl and Spoon Awards",
-        ],
-        [1.0],
-        {},
-    )
-    _MOVIES.append(h)
-    _MOVIES.append(u)
+    host = "localhost" if host == "" else host
+    user = "root" if user == "" else user
+
+    try:
+        _DB = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database="Betterboxd",
+        )
+
+    except mysql.connector.errors.Error as e:
+        print(f"Ran into an error: {e}.")
+        print(
+            "Make sure you set the database up according to the README, and make sure you entered the correct host, username, and password for the database"
+        )
+        print("Exiting.")
+        sys.exit(1)
+
+    # simple sanity check if all tables are there
+    with _DB.cursor() as cursor:
+        cursor.execute("SHOW TABLES")
+        for x in cursor:
+            tables_in_db.append(x[0])
+
+    if tables_in_db != _TABLES:
+        for table in _TABLES:
+            if table not in tables_in_db:
+                print(
+                    f"Error: table {table} not found in the database. Are you sure you configured it correctly?"
+                )
+                print("Exiting")
+                sys.exit(1)
 
 
 def clear_terminal() -> None:
@@ -115,13 +114,23 @@ def take_cli_input_with_options(options: List[Dict[str, callable]]) -> callable:
             print("Unrecognized input, please try again")
 
 
-def set_current_user(user: str) -> None:
-    """Sets global current user, acts as a token for the session"""
+def set_current_user(username: str) -> None:
+    """Sets global current user, acts as a token for the session
+
+    Args:
+        username - a str representing the username of the currently logged-in user
+    """
     global _CURRENT_USER
-    
-    for u in _USERS:
-        if u.get_username().lower() == user:
-            _CURRENT_USER = u
+
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT * 
+               FROM Account 
+               WHERE account_name = %(username)s;""",
+            {"username": username.lower()},
+        )
+        db_username, fav, watch_count, password = cursor.fetchone()
+        _CURRENT_USER = User(db_username, password, fav)
 
 
 def get_current_user() -> User:
@@ -137,15 +146,23 @@ def delete_current_user() -> None:
 
 
 def add_to_users(username: str, password: str) -> None:
-    """Add to the username database
+    """Add a user to the database
 
     Args:
         username - a str representing the queried username
         password - a str representing the entered password
     """
-    # REPLACE WITH QUERY TO ADD TO DATABASE
-    # USER INFO SHOULD ALREADY BE SANATAIZED BY THE SIGN UP FUNCTIONS
-    _USERS.append(User(username, password))
+
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """INSERT INTO Account(account_name, favorite_movie, watch_count, passphrase)
+            VALUES (%(username)s, 25, 0, %(password)s);""",
+            {
+                "username": username.lower(),
+                "password": password.lower(),
+            },
+        )
+        _DB.commit()
 
 
 def user_exists(username: str) -> bool:
@@ -157,12 +174,15 @@ def user_exists(username: str) -> bool:
     Returns:
         a bool representing if the user exists in the database
     """
-
-    # REPLACE WITH QUERY TO READ FROM DATAVASE
-    for u in _USERS:
-        if u.get_username().lower() == username.lower():
-            return True
-    return False
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT COUNT(*) 
+               FROM Account 
+               WHERE account_name = %(username)s;""",
+            {"username": username.lower()},
+        )
+        result = cursor.fetchone()[0]
+        return result == 1
 
 
 def password_correct(username: str, password: str) -> bool:
@@ -176,10 +196,15 @@ def password_correct(username: str, password: str) -> bool:
     Returns:
         a bool representing if the password is correct
     """
-    for u in _USERS:
-        if u.get_username().lower() == username.lower():
-            return u.check_password(password)
-    return False
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT passphrase 
+               FROM Account 
+               WHERE account_name = %(username)s;""",
+            {"username": username.lower()},
+        )
+        result = cursor.fetchone()[0]
+        return result == password
 
 
 def search_for_movie_by_title_exact(title: str) -> int:
