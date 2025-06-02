@@ -216,6 +216,17 @@ def search_for_movie_by_title_exact(title: str) -> int:
     Returns:
         an int indicating the movie ID if a matching title was found, else None
     """
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT movie_ID 
+               FROM Movie 
+               WHERE movie_title LIKE %(title)s;""",
+            {"title": f"%{title.lower()}%"},
+        )
+        result = cursor.fetchall()
+        print(result)
+        sys.exit()
+
     for m in _MOVIES:
         if m.get_title().lower() == title.lower():
             return m.get_id()
@@ -231,10 +242,92 @@ def search_for_movie_by_id(id: int) -> Movie:
     Returns:
         a Movie object if the movie was found, else None
     """
-    for m in _MOVIES:
-        if m.get_id() == id:
-            return m
-    return None
+    result = None
+    songs = []
+    crew_ids = []
+    crew = {}
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT * 
+               FROM Movie 
+               WHERE movie_ID = %(id)s;""",
+            {"id": id},
+        )
+        result = cursor.fetchone()
+        if result is None:
+            return None
+
+    # there was a result
+    movie_id, runtime, rating, num_ratings, title, score_id = result
+    mov = Movie(movie_id, title, runtime, rating, num_ratings)
+
+    # search for score
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT song 
+               FROM Score_Songs
+               WHERE score_ID = %(score_id)s;""",
+            {"score_id": score_id},
+        )
+        result = cursor.fetchall()
+    for tup in result:
+        songs.append(tup[0])
+    mov.set_score(score_id, songs)
+
+    # search for crew ids
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT crew_ID
+               FROM Crew_Movie
+               WHERE movie_ID = %(id)s;""",
+            {"id": id},
+        )
+        result = cursor.fetchall()
+    for tup in result:
+        crew_ids.append(tup[0])
+
+    # append composers to crew ids
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT crew_ID
+            FROM Score
+            WHERE score_ID = %(score_id)s;""",
+            {"score_id": score_id},
+        )
+        result = cursor.fetchall()
+        for id in result:
+            crew_ids.append(id[0])
+
+    # search for crew names
+    tmp_crew = {}
+    for crew_id in crew_ids:
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """SELECT crew_name
+                FROM Crew
+                WHERE crew_ID = %(crew_id)s;""",
+                {"crew_id": crew_id},
+            )
+            result = cursor.fetchall()[0][0]
+            tmp_crew[result] = crew_id
+
+    # get crew jobs
+    for crew_name, crew_id in tmp_crew.items():
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """SELECT job
+                FROM Crew_Job
+                WHERE crew_ID = %(crew_id)s;""",
+                {"crew_id": crew_id},
+            )
+            result = cursor.fetchall()[0]
+            tmp = []
+            for job in result:
+                tmp.append(job)
+            crew[crew_name] = tmp
+
+    mov.set_crew(crew)
+    return mov
 
 
 def search_by_title_inexact(term: str) -> List[Movie]:
@@ -245,7 +338,30 @@ def search_by_title_inexact(term: str) -> List[Movie]:
     Returns:
         a list of Movie objects that have the search term in the title, may be None
     """
-    return [m for m in _MOVIES if term.lower() in m.get_title().lower()]
+    results = []
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT movie_ID 
+               FROM Movie 
+               WHERE movie_title LIKE %(term)s;""",
+            {"term": f"%{term.lower()}%"},
+        )
+        results = cursor.fetchall()
+    if results == []:
+        return []
+
+    # flatten into list of IDs
+    tmp = []
+    for tup in results:
+        tmp.append(tup[0])
+    results = tmp
+
+    # turn list of IDs into list of movies
+    tmp = []
+    for id in results:
+        tmp.append(search_for_movie_by_id(id))
+
+    return tmp
 
 
 def search_by_genre(term: str) -> List[Movie]:

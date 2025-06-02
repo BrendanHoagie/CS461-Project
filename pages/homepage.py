@@ -2,6 +2,7 @@ import hashlib
 import utilities.utils as utils
 from utilities.movie import Movie
 from utilities.collection import Collection
+import sys
 
 
 def home_page() -> None:
@@ -25,6 +26,7 @@ def home_page() -> None:
         utils.clear_terminal()
         print("|-- Betterboxd Home Page --|")
         print("What would you like to do?")
+        sys.exit()
         utils.take_cli_input_with_options(options)()
 
 
