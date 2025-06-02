@@ -2283,4 +2283,5 @@ VALUES (1, "Masaki Kobayashi"),
        (2284, "Daniel Pemberton"),
        (2285, "Hans Zimmer"),
        (2286, "James Newton Howard"),
-       (2287, "Shiro Sagisu");
+       (2287, "Shiro Sagisu"),
+       (2288, "DEFAULT FAKEGUY");
