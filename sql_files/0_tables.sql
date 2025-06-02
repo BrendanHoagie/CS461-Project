@@ -32,6 +32,7 @@ CREATE TABLE Movie (
     movie_ID       INT AUTO_INCREMENT,
     run_time       TIME,
     average_rating FLOAT,
+    num_ratings    INT,
     movie_title    VARCHAR(128),
     score_ID       INT,
     PRIMARY KEY (movie_ID),
