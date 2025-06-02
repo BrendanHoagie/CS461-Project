@@ -385,19 +385,7 @@ def search_by_title_inexact(term: str) -> List[Movie]:
     return tmp
 
 
-def search_by_genre(term: str) -> List[Movie]:
-    """Returns search results that include the term in the genre field
-
-    Args:
-        term - a string we are filtering by
-
-    Returns:
-        a list of Movie objects that have the search term in the genre field, may be None
-    """
-    return [m for m in _MOVIES if any(g.lower() == term.lower() for g in m.get_genres())]
-
-
-def search_by_crew(term: str) -> List[Movie]:
+def search_by_crew_inexact(term: str) -> List[Movie]:
     """Returns search results that include the term in the crew field
 
     Args:
@@ -406,10 +394,37 @@ def search_by_crew(term: str) -> List[Movie]:
     Returns:
         a list of Movie objects that have the search term in the crew field, may be None
     """
-    return [m for m in _MOVIES if any(term.lower() in c.lower() for c in m.get_crew().keys())]
+    results = []
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT movie_ID
+               FROM Crew_Movie
+               WHERE crew_ID = (
+	            SELECT crew_ID
+	            FROM Crew
+	            WHERE crew_name like %(term)s;
+                );""",
+            {"term": f"%{term.lower()}%"},
+        )
+        results = cursor.fetchall()
+    if results == []:
+        return []
+
+    # flatten into list of IDs
+    tmp = []
+    for tup in results:
+        tmp.append(tup[0])
+    results = tmp
+
+    # turn list of IDs into list of movies
+    tmp = []
+    for id in results:
+        tmp.append(search_for_movie_by_id(id))
+
+    return tmp
 
 
-def search_by_score(term: str) -> List[Movie]:
+def search_by_score_inexact(term: str) -> List[Movie]:
     """Returns search results that include the term in any song titles of the score field
 
     Args:
@@ -418,7 +433,34 @@ def search_by_score(term: str) -> List[Movie]:
     Returns:
         a list of Movie objects that have the search term in a song in the score field, may be None
     """
-    return [m for m in _MOVIES if any(term.lower() in s.lower() for s in m.get_score())]
+    results = []
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT movie_ID
+               FROM Movie
+               WHERE movie_ID = (
+	                SELECT score_ID
+	                FROM Score_Songs
+	                WHERE song like %(term)s;
+            );""",
+            {"term": f"%{term.lower()}%"},
+        )
+        results = cursor.fetchall()
+    if results == []:
+        return []
+
+    # flatten into list of IDs
+    tmp = []
+    for tup in results:
+        tmp.append(tup[0])
+    results = tmp
+
+    # turn list of IDs into list of movies
+    tmp = []
+    for id in results:
+        tmp.append(search_for_movie_by_id(id))
+
+    return tmp
 
 
 def add_log(movie_id: int, rating: float, review: str) -> None:
