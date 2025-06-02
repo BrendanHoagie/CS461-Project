@@ -17,7 +17,7 @@ def start_up():
     print("What would you like to do?")
     user = utils.take_cli_input_with_options(options)().lower()
     testUser = utils.get_current_user()
-    #print(f"|__ {testUser.get_username()}'s Profile --|")
+    # print(f"|__ {testUser.get_username()}'s Profile --|")
     utils.set_current_user(user)
 
 
@@ -35,12 +35,14 @@ def sign_up() -> str:
 
     # get username
     while 1:
-        username = input("Enter your username (max 32 characters): ").lower()
+        username = input(
+            f"Enter your username (max {utils.MAX_USERNAME_LENGTH} characters): "
+        ).lower()
         if len(username) <= utils.MAX_USERNAME_LENGTH:
-            
+
             # SANITIZE USER INPUT
             # SQL QUERY TO CHECK FOR EXITING USERNAME
-            
+
             if not utils.user_exists(username):
                 break
             print("Sorry, a user with that name already exists, please choose another one")
@@ -49,7 +51,7 @@ def sign_up() -> str:
 
     # get password
     while 1:
-        password = input("Enter your password (max 32 characters): ")
+        password = input(f"Enter your password (max {utils.MAX_PASSWORD_LENGTH} characters): ")
         if len(password) <= utils.MAX_PASSWORD_LENGTH:
             break
         print("Sorry, that password is too long, please try again")
