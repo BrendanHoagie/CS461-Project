@@ -56,6 +56,15 @@ class Movie:
         """
         self._crew = crew
 
+    def add_crew_member(self, name: str, roles: List[str]) -> None:
+        """Adds one crew member to the existing crew
+
+        Args:
+            name - name of crew member (key)
+            roles - list of roles (values)
+        """
+        self._crew[name] = roles
+
     def get_score(self) -> List[str]:
         """Getter for score"""
         return self._score

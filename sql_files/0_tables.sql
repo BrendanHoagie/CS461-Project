@@ -2,6 +2,8 @@ CREATE DATABASE Betterboxd;
 
 USE Betterboxd;
 
+SET sql_mode =''; -- silently truncate values that are too long
+
 CREATE TABLE Crew (
     crew_ID	INT AUTO_INCREMENT,
     crew_name    VARCHAR(128),

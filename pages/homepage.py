@@ -26,7 +26,6 @@ def home_page() -> None:
         utils.clear_terminal()
         print("|-- Betterboxd Home Page --|")
         print("What would you like to do?")
-        sys.exit()
         utils.take_cli_input_with_options(options)()
 
 
@@ -89,7 +88,6 @@ def add_movie(name: str = None) -> Movie:
 
     title = ""
     id = -1
-    genres = []
     runtime = 0
     crew = {}
     score = []
@@ -102,18 +100,13 @@ def add_movie(name: str = None) -> Movie:
             )
             if (
                 input(
-                    "Would you like to continue adding a movie? Type 1 for yes, anything else to return to homepage: "
+                    "Would you like to continue adding a movie? Type 1 for yes, enter to return to homepage: "
                 )
-                == "1"
+                != "1"
             ):
                 return None
-
-    # get list of genres
-    raw_genre = input(
-        "Enter the genre(s) of this movie. For multiple genres, seperate them with a comma: "
-    )
-    raw_genre = raw_genre.replace(" ", "")
-    genres = raw_genre.split(",")
+        else:
+            break
 
     # get runtime
     while 1:
@@ -130,13 +123,10 @@ def add_movie(name: str = None) -> Movie:
     print("|-- Crew Entry --|")
     while 1:
         name = input("Enter the name of a crew member: ")
-        raw_roles = input(
-            f"Enter the jobs {name} did on this movie. For multiple roles, seperate them with a comma: "
-        )
-        raw_roles = raw_roles.replace(" ", "")
-        crew[name] = raw_roles.split(",")
+        raw_roles = input(f"Enter the job {name} did on this movie: ")
+        crew[name] = [].append(raw_roles)
         print(f"Would you like to add another crew member?")
-        if input("Type 1 for yes, anything else to finish adding crew members: ") != "1":
+        if input("Type 1 for yes, enter to finish adding crew members: ") != "1":
             break
 
     # Get the score
@@ -145,12 +135,13 @@ def add_movie(name: str = None) -> Movie:
         song = input("Enter the name of a song: ")
         score.append(song)
         print(f"Would you like to add another song?")
-        if input("Type 1 for yes, anything else to finish adding crew members: ") != "1":
+        if input("Type 1 for yes, enter to finish adding songs: ") != "1":
             break
 
     # add the movie
-    new_movie = Movie(title, genres, runtime, crew, score)
-    utils.add_movie_to_database(new_movie)
+    new_movie = Movie(-1, title, runtime * 60, 0, 0, -1, crew, score)
+    new_movie = utils.add_movie_to_database(new_movie)
+    new_movie.display_movie()
     return new_movie
 
 

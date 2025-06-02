@@ -47,9 +47,14 @@ def set_up_database() -> None:
     host = user = password = ""
 
     print("Let's make sure the database is set up correctly!")
-    host = input("Enter the host, default is localhost, press enter to accept default: ")
-    user = input("Enter the current user, default is root, press enter to accept default: ")
-    password = input("Enter the password for the current user: ")
+    # host = input("Enter the host, default is localhost, press enter to accept default: ")
+    # user = input("Enter the current user, default is root, press enter to accept default: ")
+    # password = input("Enter the password for the current user: ")
+
+    # my login info for testing, remove before push
+    host = "localhost"
+    user = "root"
+    password = "*Brendan10!"
 
     host = "localhost" if host == "" else host
     user = "root" if user == "" else user
@@ -84,6 +89,25 @@ def set_up_database() -> None:
                 )
                 print("Exiting")
                 sys.exit(1)
+
+    # mov = Movie(
+    #     -1,
+    #     "test_title",
+    #     80 * 60,
+    #     0.0,
+    #     0,
+    #     -1,
+    #     {
+    #         # "Marlon Brando": ["actor"],
+    #         "you": ["director"],
+    #         "me": ["Actor"],
+    #     },
+    #     [
+    #         "song1",
+    #         "song2",
+    #     ],
+    # )
+    # add_movie_to_database(mov)
 
 
 def clear_terminal() -> None:
@@ -220,17 +244,14 @@ def search_for_movie_by_title_exact(title: str) -> int:
         cursor.execute(
             """SELECT movie_ID 
                FROM Movie 
-               WHERE movie_title LIKE %(title)s;""",
-            {"title": f"%{title.lower()}%"},
+               WHERE movie_title = %(title)s;""",
+            {"title": title.lower()},
         )
         result = cursor.fetchall()
-        print(result)
-        sys.exit()
+    if result == []:
+        return []
 
-    for m in _MOVIES:
-        if m.get_title().lower() == title.lower():
-            return m.get_id()
-    return None
+    return result[0][0]
 
 
 def search_for_movie_by_id(id: int) -> Movie:
@@ -415,10 +436,241 @@ def add_log(movie_id: int, rating: float, review: str) -> None:
             m.add_text_review(user_id=_CURRENT_USER, review=review)
 
 
-def add_movie_to_database(mov: Movie) -> None:
-    """Adds a movie to the database
+def add_movie_to_database(mov: Movie) -> Movie:
+    """Adds a movie to the database & returns the properly formatted movie
 
     Args:
         mov - a movie object to be added to database
+
+    Returns:
+        a Movie object containing the same data, but properly formatted
     """
-    _MOVIES.append(mov)
+    run_time = mov.get_runtime()
+    avg_rating = mov.get_avg_rating()
+    num_ratings = mov.get_num_rating()
+    movie_title = mov.get_title()
+    movie_id = -1
+
+    # add the movie
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """INSERT INTO Movie(run_time, average_rating, num_ratings, movie_title)
+            VALUES (%(run_time)s, %(avg_rating)s, %(num_ratings)s, %(movie_title)s);""",
+            {
+                "run_time": run_time,
+                "avg_rating": avg_rating,
+                "num_ratings": num_ratings,
+                "movie_title": movie_title.lower(),
+            },
+        )
+
+    # test
+    # 80
+    # {'me': ['actor'], 'you': ['director']}
+    # ['song1', 'song2']
+
+    # get the id - no error checking since we just added it
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT movie_ID 
+               FROM Movie 
+               WHERE movie_title = %(movie_title)s AND run_time = %(run_time)s;""",
+            {
+                "movie_title": movie_title.lower(),
+                "run_time": run_time,
+            },
+        )
+        movie_id = cursor.fetchall()[0][0]
+
+    # check for composer
+    composer_name = ""
+    for crew_name, roles in mov.get_crew().items():
+        if roles[0].lower() == "composer":
+            composer_name = crew_name
+            break
+    if composer_name == "":
+        mov.add_crew_member("Unknown Composer", ["Composer"])
+
+    # find the existing crew members
+    tmp_crew = mov.get_crew()
+    results = []
+    for crew_name, roles in tmp_crew.items():
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """SELECT *
+                FROM Crew
+                WHERE crew_name = %(crew_name)s;""",
+                {"crew_name": crew_name.lower()},
+            )
+            results.append(cursor.fetchall())
+
+    # prune existing crew from tmp_crew
+    for result in results:
+        try:
+            cur_crew_id, name = result[0]
+            tmp_crew.pop(name)
+
+            # insert new movie for existing crew
+            with _DB.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO Crew_Movie(crew_ID, movie_ID)
+                    VALUES (%(cur_crew_id)s, %(movie_id)s);""",
+                    {
+                        "cur_crew_id": cur_crew_id,
+                        "movie_id": movie_id,
+                    },
+                )
+                _DB.commit()
+        except:
+            continue
+
+    # add remaining crew members
+    for crew_name, roles in tmp_crew.items():
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO Crew(crew_name)
+                VALUES (%(crew_name)s);""",
+                {"crew_name": crew_name.lower()},
+            )
+            _DB.commit()
+
+    # get new crew IDs, put them after the job in tmp_crew
+    for crew_name, roles in tmp_crew.items():
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """SELECT crew_ID
+                FROM Crew
+                WHERE crew_name = %(crew_name)s;""",
+                {"crew_name": crew_name.lower()},
+            )
+            roles.append(cursor.fetchall()[0])
+
+    # set new crew jobs
+    for crew_name, roles in tmp_crew.items():
+        job = roles[0]
+        id_solo = roles[1][0]
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO Crew_Job(job, crew_ID)
+                VALUES (%(job)s, %(id_solo)s)""",
+                {
+                    "job": job,
+                    "id_solo": id_solo,
+                },
+            )
+            _DB.commit()
+
+    # set new crew movie cross tables
+    for crew_name, roles in tmp_crew.items():
+        with _DB.cursor() as cursor:
+            cursor.execute(
+                """INSERT INTO Crew_Movie(crew_ID, movie_ID)
+                VALUES (%(crew_ID)s, %(movie_id)s);""",
+                {
+                    "crew_ID": roles[1][0],
+                    "movie_id": movie_id,
+                },
+            )
+            _DB.commit()
+
+    # get composer id
+    composer_id = -1
+    composers = []
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT crew_ID
+                FROM Crew_Job
+                WHERE job = 'composer';""",
+        )
+        for tup in cursor.fetchall():
+            composers.append(tup[0])
+
+    this_movie_ids = []
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT crew_ID
+                FROM Crew_Movie
+                WHERE movie_ID = %(movie_id)s;""",
+            {"movie_id": movie_id},
+        )
+        for tup in cursor.fetchall():
+            this_movie_ids.append(tup[0])
+
+    for composer in composers:
+        if composer in this_movie_ids:
+            composer_id = composer
+
+    # put composer id into Score table
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """INSERT INTO Score(score_ID, crew_ID)
+            VALUES (%(score_ID)s, %(composer_id)s);""",
+            {
+                "score_ID": movie_id,
+                "composer_id": composer_id,
+            },
+        )
+        _DB.commit()
+
+    # link songs to Score if it exists
+    if mov.get_score() != None:
+        i = 1
+        for song in mov.get_score():
+            with _DB.cursor() as cursor:
+                cursor.execute(
+                    """INSERT INTO Score_Songs(song, score_ID, track_number)
+                    VALUES (%(song)s, %(score_id)s, %(track_number)s);""",
+                    {
+                        "song": song,
+                        "score_id": movie_id,
+                        "track_number": i,
+                    },
+                )
+                _DB.commit()
+                i += 1
+
+    return search_for_movie_by_id(movie_id)
+
+    # testing cleanup
+    # with _DB.cursor() as cursor:
+    #     cursor.execute(
+    #         """DELETE FROM Score_Songs
+    #         WHERE score_ID = %(score_id)s;""",
+    #         {"score_id": movie_id},
+    #     )
+    #     _DB.commit()
+
+    # with _DB.cursor() as cursor:
+    #     cursor.execute(
+    #         """DELETE FROM Score
+    #         WHERE crew_ID = %(composer_id)s;""",
+    #         {"composer_id": composer_id},
+    #     )
+    #     _DB.commit()
+
+    # for crew_name, roles in tmp_crew.items():
+    #     with _DB.cursor() as cursor:
+    #         cursor.execute(
+    #             """DELETE FROM Crew_Job
+    #             WHERE crew_ID = %(crew_id)s;""",
+    #             {"crew_id": roles[1][0]},
+    #         )
+    #         _DB.commit()
+
+    # for crew_name, roles in tmp_crew.items():
+    #     with _DB.cursor() as cursor:
+    #         cursor.execute(
+    #             """DELETE FROM Crew_Movie
+    #             WHERE crew_ID = %(crew_id)s;""",
+    #             {"crew_id": roles[1][0]},
+    #         )
+    #         _DB.commit()
+
+    # for crew_name, roles in tmp_crew.items():
+    #     with _DB.cursor() as cursor:
+    #         cursor.execute(
+    #             """DELETE FROM Crew
+    #             WHERE crew_name = %(crew_name)s;""",
+    #             {"crew_name": crew_name.lower()},
+    #         )
+    #         _DB.commit()
