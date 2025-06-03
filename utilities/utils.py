@@ -101,7 +101,8 @@ def disconnect_database() -> None:
     """Safely disconnects from database and clears globals"""
     global _DB
     global _CURRENT_USER
-
+    if _DB is None:
+        return
     _DB.close()
     _DB = None
     _CURRENT_USER = None
@@ -767,47 +768,3 @@ def add_movie_to_database(mov: Movie) -> Movie:
         _DB.commit()
 
     return search_for_movie_by_id(movie_id)
-
-    # testing cleanup
-    # with _DB.cursor() as cursor:
-    #     cursor.execute(
-    #         """DELETE FROM Score_Songs
-    #         WHERE score_ID = %(score_id)s;""",
-    #         {"score_id": movie_id},
-    #     )
-    #     _DB.commit()
-
-    # with _DB.cursor() as cursor:
-    #     cursor.execute(
-    #         """DELETE FROM Score
-    #         WHERE crew_ID = %(composer_id)s;""",
-    #         {"composer_id": composer_id},
-    #     )
-    #     _DB.commit()
-
-    # for crew_name, roles in tmp_crew.items():
-    #     with _DB.cursor() as cursor:
-    #         cursor.execute(
-    #             """DELETE FROM Crew_Job
-    #             WHERE crew_ID = %(crew_id)s;""",
-    #             {"crew_id": roles[1][0]},
-    #         )
-    #         _DB.commit()
-
-    # for crew_name, roles in tmp_crew.items():
-    #     with _DB.cursor() as cursor:
-    #         cursor.execute(
-    #             """DELETE FROM Crew_Movie
-    #             WHERE crew_ID = %(crew_id)s;""",
-    #             {"crew_id": roles[1][0]},
-    #         )
-    #         _DB.commit()
-
-    # for crew_name, roles in tmp_crew.items():
-    #     with _DB.cursor() as cursor:
-    #         cursor.execute(
-    #             """DELETE FROM Crew
-    #             WHERE crew_name = %(crew_name)s;""",
-    #             {"crew_name": crew_name.lower()},
-    #         )
-    #         _DB.commit()

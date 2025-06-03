@@ -39,21 +39,6 @@ CREATE TABLE Movie (
     FOREIGN KEY (score_ID) REFERENCES Score (score_ID)
 );
 
-CREATE TABLE Collections (
-    collection_ID    INT AUTO_INCREMENT,
-    collection_name  VARCHAR(32),
-    PRIMARY KEY (collection_ID)
-);
-
-CREATE TABLE Entry (
-    collection_ID INT,
-    movie_ID      INT,
-    ranking       INT,
-    PRIMARY KEY (collection_ID, movie_ID),
-    FOREIGN KEY (collection_ID) REFERENCES Collections (collection_ID),
-    FOREIGN KEY (movie_ID) REFERENCES Movie (movie_ID)
-);
-
 CREATE TABLE Account (
     account_name   VARCHAR(32),
     favorite_movie INT,
@@ -69,12 +54,4 @@ CREATE TABLE Crew_Movie (
     PRIMARY KEY (crew_ID, movie_ID),
     FOREIGN KEY (crew_ID) REFERENCES Crew (crew_ID),
     FOREIGN KEY (movie_ID) REFERENCES Movie (movie_ID)
-);
-
-CREATE TABLE Account_Collections (
-    account_name VARCHAR(32),
-    collection_ID    INT,
-    PRIMARY KEY (account_name, collection_ID),
-    FOREIGN KEY (account_name)  REFERENCES Account (account_name),
-    FOREIGN KEY (collection_ID) REFERENCES Collections (collection_ID)
 );
