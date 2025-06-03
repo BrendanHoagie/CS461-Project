@@ -45,7 +45,7 @@ def log_movie() -> None:
         # get the rating
         while 1:
             try:
-                rating = float(input("Enter a star rating 1-5, including partial values"))
+                rating = float(input("Enter a star rating 0.0-5, including partial values: "))
                 if rating < 0.0:
                     print("Sorry, we know it's bad, but you can't give a negative rating")
                 elif rating > 5.0:
@@ -55,9 +55,9 @@ def log_movie() -> None:
             except Exception:
                 print("Unrecognized input, please try again")
 
-        # get the text review - TODO: how do we handle someone reviewing more than 250 characters? retype it? cut if off?
-        review = input("Enter your review of the movie (max 250 characters): ")
-        utils.add_log(movie_id, rating, review)
+        utils.add_log(movie_id, rating)
+        print(f"you've successfully logged {utils.search_for_movie_by_id(movie_id).get_title()}")
+        input("Press enter to return to homepage: ")
 
     utils.clear_terminal()
     print("|-- Log Movie --|")
@@ -119,12 +119,18 @@ def add_movie(name: str = None) -> Movie:
         except Exception:
             print("Unrecognized input, try again")
 
+    hours = runtime // 60
+    minutes = runtime % 60
+    runtime = ((hours * 100) + minutes) * 100
+
     # Get the crew
     print("|-- Crew Entry --|")
     while 1:
+        tmp = []
         name = input("Enter the name of a crew member: ")
-        raw_roles = input(f"Enter the job {name} did on this movie: ")
-        crew[name] = [].append(raw_roles)
+        role = input(f"Enter the job {name} did on this movie: ")
+        tmp.append(role)
+        crew[name] = tmp
         print(f"Would you like to add another crew member?")
         if input("Type 1 for yes, enter to finish adding crew members: ") != "1":
             break
@@ -139,9 +145,11 @@ def add_movie(name: str = None) -> Movie:
             break
 
     # add the movie
-    new_movie = Movie(-1, title, runtime * 60, 0, 0, -1, crew, score)
+    new_movie = Movie(-1, title, runtime, 0, 0, -1, crew, score)
     new_movie = utils.add_movie_to_database(new_movie)
+    print(f"You've successfully added {title} to the database!")
     new_movie.display_movie()
+    input("Press enter to return to home screen")
     return new_movie
 
 

@@ -250,7 +250,7 @@ def search_for_movie_by_title_exact(title: str) -> int:
         result = cursor.fetchall()
     if result == []:
         return []
-
+    print(result[0][0])
     return result[0][0]
 
 
@@ -421,19 +421,42 @@ def search_by_score(term: str) -> List[Movie]:
     return [m for m in _MOVIES if any(term.lower() in s.lower() for s in m.get_score())]
 
 
-def add_log(movie_id: int, rating: float, review: str) -> None:
+def add_log(movie_id: int, rating: float) -> None:
     """Adds a log to a movie in the database
     Does not do any error checking
 
     Args:
         movie_id - an int representing the id of the movie we want
         rating - a float representing the rating given
-        review - a string representing the text review
     """
-    for m in _MOVIES:
-        if m.get_id() == movie_id:
-            m.add_star_rating(rating)
-            m.add_text_review(user_id=_CURRENT_USER, review=review)
+    current_rating = num_ratings = 0
+
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """SELECT average_rating, num_ratings
+            FROM movie
+            WHERE movie_ID = %(movie_id)s""",
+            {"movie_id": movie_id},
+        )
+        current_rating, num_ratings = cursor.fetchall()[0]
+
+    total_score = current_rating * num_ratings
+    new_total_score = total_score + rating
+    num_ratings += 1
+    new_average_rating = round(new_total_score / num_ratings, 2)
+
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """UPDATE Movie
+            SET average_rating = %(new_average_rating)s, num_ratings = %(num_ratings)s 
+            WHERE movie_ID = %(movie_id)s""",
+            {
+                "new_average_rating": new_average_rating,
+                "num_ratings": num_ratings,
+                "movie_id": movie_id,
+            },
+        )
+        _DB.commit()
 
 
 def add_movie_to_database(mov: Movie) -> Movie:
@@ -464,11 +487,6 @@ def add_movie_to_database(mov: Movie) -> Movie:
             },
         )
 
-    # test
-    # 80
-    # {'me': ['actor'], 'you': ['director']}
-    # ['song1', 'song2']
-
     # get the id - no error checking since we just added it
     with _DB.cursor() as cursor:
         cursor.execute(
@@ -485,6 +503,7 @@ def add_movie_to_database(mov: Movie) -> Movie:
     # check for composer
     composer_name = ""
     for crew_name, roles in mov.get_crew().items():
+        print(f"{crew_name}: {roles}")
         if roles[0].lower() == "composer":
             composer_name = crew_name
             break
@@ -614,8 +633,10 @@ def add_movie_to_database(mov: Movie) -> Movie:
 
     # link songs to Score if it exists
     if mov.get_score() != None:
+        print(f"There are {len(mov.get_score())}")
         i = 1
         for song in mov.get_score():
+            print(f"Adding song: {song}")
             with _DB.cursor() as cursor:
                 cursor.execute(
                     """INSERT INTO Score_Songs(song, score_ID, track_number)
@@ -628,6 +649,19 @@ def add_movie_to_database(mov: Movie) -> Movie:
                 )
                 _DB.commit()
                 i += 1
+
+    # update to add score_id via movie_id
+    with _DB.cursor() as cursor:
+        cursor.execute(
+            """UPDATE Movie
+            SET score_ID = %(score_id)s
+            WHERE movie_ID = %(movie_id)s""",
+            {
+                "score_id": movie_id,
+                "movie_id": movie_id,
+            },
+        )
+        _DB.commit()
 
     return search_for_movie_by_id(movie_id)
 
