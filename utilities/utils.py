@@ -93,11 +93,15 @@ def disconnect_database() -> None:
     """Safely disconnects from database and clears globals"""
     global _DB
     global _CURRENT_USER
+
+    print("\nLogging out...")
     if _DB is None:
+        print("\nThank you for visiting Betterbox! We hope you'll come back soon!")
         return
     _DB.close()
     _DB = None
     _CURRENT_USER = None
+    print("\nThank you for visiting Betterbox! We hope you'll come back soon!")
 
 
 def clear_terminal() -> None:
@@ -160,31 +164,6 @@ def delete_current_user() -> None:
 
     with _DB.cursor() as cursor:
         try:
-            # 1. Get all collection IDs owned by this user (using named parameters)
-            cursor.execute(
-                """SELECT collection_ID 
-                   FROM Account_Collections 
-                   WHERE account_name = %(username)s;""",
-                {"username": _CURRENT_USER.get_username().lower()},
-            )
-            collection_ids = [row[0] for row in cursor.fetchall()]
-
-            # 2. Delete entries in those collections (using tuple for IN clause)
-            if collection_ids:
-                cursor.execute(
-                    """DELETE FROM Entry 
-                       WHERE collection_ID IN %(collection_ids)s;""",
-                    {"collection_ids": tuple(collection_ids)},  # Note: Must be a tuple
-                )
-
-            # 3. Remove account->collection mappings
-            cursor.execute(
-                """DELETE FROM Account_Collections 
-                   WHERE account_name = %(username)s;""",
-                {"username": _CURRENT_USER.get_username().lower()},
-            )
-
-            # 4. Finally delete the account
             cursor.execute(
                 """DELETE FROM Account 
                    WHERE account_name = %(username)s;""",
