@@ -264,6 +264,30 @@ def update_password(password):
         except Exception as e:
             _DB.rollback()
             raise Exception(f"Password update failed: {str(e)}")
+        
+def update_favorite_movie(movie_id: int):
+    """SQL Updater for favorite Movie.
+
+    Args:
+        movie_id - the Integer ID for the Movie being set as Favorite Movie
+    """
+    with _DB.cursor() as cursor:
+        try:
+            cursor.execute(
+                """UPDATE Account 
+                    SET favorite_movie = %(movie_id)s 
+                    WHERE account_name = %(username)s;""",
+                {
+                    "movie_id": movie_id,
+                    "username": _CURRENT_USER.get_username().lower(),
+                },
+            )
+
+            _DB.commit()
+            _CURRENT_USER.set_fav_movie_id(movie_id)
+        except Exception as e:
+            _DB.rollback()
+            raise Exception(f"Movie update failed: {str(e)}")
 
 
 def search_for_movie_by_title_exact(title: str) -> int:
