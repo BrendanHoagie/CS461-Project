@@ -13,7 +13,7 @@ Randy Modglin <rjm433@drexel.edu>
     - `utils.py` is a large utility file that primarily interfaces between the python application and the mysql database. If you were looking for SQL calls to grade, it would be here.
 ## SQL_files
 - This is a folder that contains all of our `.sql` files that you will need to run in order to set up the database
-- The sql files are numbered from 0 to 10, this is the order they should be run in
+- The sql files are numbered from 0 to 7, this is the order they should be run in
 
 # Setup
 ## Setting Up MySQL
