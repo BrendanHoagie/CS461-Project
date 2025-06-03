@@ -75,7 +75,7 @@ def log_in() -> str:
     # get the username
     while 1:
         username = input("Enter your username: ")
-        if utils.user_exists(username):
+        if len(password) > utils.MAX_USERNAME_LENGTH and utils.user_exists(username):
             break
 
         print("User not found, try again")

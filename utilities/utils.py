@@ -26,9 +26,15 @@ _TABLES = [
 _CURRENT_USER = None
 
 # constants
+DEFAULT_MOVIE_ID = 25  # fake/default movie, check if ID matches when displaying profile and display "no favorite set yet or something"
 MAX_PASSWORD_LENGTH = 32
 MAX_USERNAME_LENGTH = 32
-DEFAULT_MOVIE_ID = 25  # fake/default movie, check when displaying profile
+MAX_JOB_LENGTH = 32
+MAX_CREW_NAME_LENGTH = 128
+MAX_SONG_NAME_LENGTH = 128
+MAX_MOVIE_TITLE_LENGTH = 128
+MAX_COLLECTION_NAME_LENGTH = 32
+MAX_PASSPHRASE_LENGTH = 64
 
 
 class GoBackException(Exception):
@@ -90,24 +96,15 @@ def set_up_database() -> None:
                 print("Exiting")
                 sys.exit(1)
 
-    # mov = Movie(
-    #     -1,
-    #     "test_title",
-    #     80 * 60,
-    #     0.0,
-    #     0,
-    #     -1,
-    #     {
-    #         # "Marlon Brando": ["actor"],
-    #         "you": ["director"],
-    #         "me": ["Actor"],
-    #     },
-    #     [
-    #         "song1",
-    #         "song2",
-    #     ],
-    # )
-    # add_movie_to_database(mov)
+
+def disconnect_database() -> None:
+    """Safely disconnects from database and clears globals"""
+    global _DB
+    global _CURRENT_USER
+
+    _DB.close()
+    _DB = None
+    _CURRENT_USER = None
 
 
 def clear_terminal() -> None:
