@@ -11,12 +11,9 @@ _DB = None
 # list of all the tables in properly configured database
 _TABLES = [
     "account",
-    "account_collections",
-    "collections",
     "crew",
     "crew_job",
     "crew_movie",
-    "entry",
     "movie",
     "score",
     "score_songs",
@@ -168,7 +165,7 @@ def delete_current_user() -> None:
                 """SELECT collection_ID 
                    FROM Account_Collections 
                    WHERE account_name = %(username)s;""",
-                {"username": _CURRENT_USER.get_username().lower()}
+                {"username": _CURRENT_USER.get_username().lower()},
             )
             collection_ids = [row[0] for row in cursor.fetchall()]
 
@@ -177,21 +174,21 @@ def delete_current_user() -> None:
                 cursor.execute(
                     """DELETE FROM Entry 
                        WHERE collection_ID IN %(collection_ids)s;""",
-                    {"collection_ids": tuple(collection_ids)}  # Note: Must be a tuple
+                    {"collection_ids": tuple(collection_ids)},  # Note: Must be a tuple
                 )
 
             # 3. Remove account->collection mappings
             cursor.execute(
                 """DELETE FROM Account_Collections 
                    WHERE account_name = %(username)s;""",
-                {"username": _CURRENT_USER.get_username().lower()}
+                {"username": _CURRENT_USER.get_username().lower()},
             )
 
             # 4. Finally delete the account
             cursor.execute(
                 """DELETE FROM Account 
                    WHERE account_name = %(username)s;""",
-                {"username": _CURRENT_USER.get_username().lower()}
+                {"username": _CURRENT_USER.get_username().lower()},
             )
 
             _DB.commit()
@@ -263,30 +260,32 @@ def password_correct(username: str, password: str) -> bool:
         result = cursor.fetchone()[0]
         return result == password
 
-def update_password(password):
-        """SQL Updater for password.
-        This function does not hash, always pass in a hashed string
 
-        Args:
-            password - a  HASHED string containing the new password.
-        """
-        with _DB.cursor() as cursor:
-            try:
-                cursor.execute(
-                    """UPDATE Account 
+def update_password(password):
+    """SQL Updater for password.
+    This function does not hash, always pass in a hashed string
+
+    Args:
+        password - a  HASHED string containing the new password.
+    """
+    with _DB.cursor() as cursor:
+        try:
+            cursor.execute(
+                """UPDATE Account 
                     SET passphrase = %(password)s 
                     WHERE account_name = %(username)s;""",
-                    {
-                        "password": password,  # Should be pre-hashed
-                        "username": _CURRENT_USER.get_username().lower()
-                    }
-                )
+                {
+                    "password": password,  # Should be pre-hashed
+                    "username": _CURRENT_USER.get_username().lower(),
+                },
+            )
 
-                _DB.commit()
-                _CURRENT_USER.set_password(password=password)
-            except Exception as e:
-                _DB.rollback()
-                raise Exception(f"Password update failed: {str(e)}")
+            _DB.commit()
+            _CURRENT_USER.set_password(password=password)
+        except Exception as e:
+            _DB.rollback()
+            raise Exception(f"Password update failed: {str(e)}")
+
 
 def search_for_movie_by_title_exact(title: str) -> int:
     """Query if a given movie title is in the database (exact match)

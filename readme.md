@@ -22,7 +22,7 @@ Randy Modglin <rjm433@drexel.edu>
 ## Creating the Betterboxd Database
 - Please ensure you do not already have an existing database in mysql called Betterboxd. If you do, please `DROP DATABASE Betterboxd;` to start with a clean slate
 - You will be sourcing each of the 11 files found in `sql_files/`. You will do this by running `source absolute/path/to/file.sql` in the mysql terminal. It is important that it is an absolute path, and it is important to not have quotes around the filepath
-- Do this starting at `0_tables.sql` through `10_account_collections.sql`, and you will have successfully set up the database!
+- Do this starting at `0_tables.sql` through `7_crew_movie.sql`, and you will have successfully set up the database!
 ## Setting Up Python
 - Ensure you have `python 3` installed on your computer and its package manager `pip`
 - To install the mysql python connector package, in the root of the project run `python -m pip install mysql-connector-python`. This will install the library specific to mysql that allows python to interface with it
