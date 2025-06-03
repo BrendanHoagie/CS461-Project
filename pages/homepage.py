@@ -257,7 +257,6 @@ def view_and_edit() -> None:
         else:
             print(f"{utils.search_for_movie_by_id(user.get_fav_movie_id()).get_title()}")
         print()
-        print(f"Has created {len(user.get_collections())} lists")
         input("Type anthing to return to the account page: ")
         return
 

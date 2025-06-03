@@ -101,9 +101,9 @@ class Movie:
         print(f"Run time: {self._runtime}")
         print(f"Crew:")
         for k, v in self._crew.items():
-            print(f"\t{k}: {v}")
+            print(f"\t{k}: {v[0]}")
         print(f"Score:")
-        for s in self._score:
-            print(f"\t {s}")
+        for i, s in enumerate(self._score):
+            print(f"\t {i + 1}. {s}")
         print(f"Star Rating: {self._avg_rating}")
         print()

@@ -306,7 +306,6 @@ def search_for_movie_by_title_exact(title: str) -> int:
         result = cursor.fetchall()
     if result == []:
         return []
-    print(result[0][0])
     return result[0][0]
 
 
@@ -455,11 +454,10 @@ def search_by_crew_inexact(term: str) -> List[Movie]:
         cursor.execute(
             """SELECT movie_ID
                FROM Crew_Movie
-               WHERE crew_ID = (
+               WHERE crew_ID IN (
 	            SELECT crew_ID
 	            FROM Crew
-	            WHERE crew_name like %(term)s;
-                );""",
+	            WHERE crew_name LIKE %(term)s);""",
             {"term": f"%{term.lower()}%"},
         )
         results = cursor.fetchall()
@@ -493,30 +491,24 @@ def search_by_score_inexact(term: str) -> List[Movie]:
     with _DB.cursor() as cursor:
         cursor.execute(
             """SELECT movie_ID
-               FROM Movie
-               WHERE movie_ID = (
-	                SELECT score_ID
-	                FROM Score_Songs
-	                WHERE song like %(term)s;
-            );""",
+                FROM Movie
+                WHERE score_ID IN (
+                    SELECT score_ID
+                    FROM Score_Songs
+                    WHERE LOWER(song) LIKE %(term)s
+                )""",
             {"term": f"%{term.lower()}%"},
         )
         results = cursor.fetchall()
-    if results == []:
+
+    if not results:
         return []
 
-    # flatten into list of IDs
-    tmp = []
-    for tup in results:
-        tmp.append(tup[0])
-    results = tmp
+    # Convert list of tuples to list of IDs
+    movie_ids = [row[0] for row in results]
 
-    # turn list of IDs into list of movies
-    tmp = []
-    for id in results:
-        tmp.append(search_for_movie_by_id(id))
-
-    return tmp
+    # Fetch full movie objects
+    return [search_for_movie_by_id(mid) for mid in movie_ids]
 
 
 def add_log(movie_id: int, rating: float) -> None:
@@ -581,7 +573,7 @@ def add_movie_to_database(mov: Movie) -> Movie:
                 "run_time": run_time,
                 "avg_rating": avg_rating,
                 "num_ratings": num_ratings,
-                "movie_title": movie_title.lower(),
+                "movie_title": movie_title,
             },
         )
 
@@ -601,7 +593,6 @@ def add_movie_to_database(mov: Movie) -> Movie:
     # check for composer
     composer_name = ""
     for crew_name, roles in mov.get_crew().items():
-        print(f"{crew_name}: {roles}")
         if roles[0].lower() == "composer":
             composer_name = crew_name
             break
@@ -647,7 +638,7 @@ def add_movie_to_database(mov: Movie) -> Movie:
             cursor.execute(
                 """INSERT INTO Crew(crew_name)
                 VALUES (%(crew_name)s);""",
-                {"crew_name": crew_name.lower()},
+                {"crew_name": crew_name},
             )
             _DB.commit()
 
@@ -731,10 +722,8 @@ def add_movie_to_database(mov: Movie) -> Movie:
 
     # link songs to Score if it exists
     if mov.get_score() != None:
-        print(f"There are {len(mov.get_score())}")
         i = 1
         for song in mov.get_score():
-            print(f"Adding song: {song}")
             with _DB.cursor() as cursor:
                 cursor.execute(
                     """INSERT INTO Score_Songs(song, score_ID, track_number)
