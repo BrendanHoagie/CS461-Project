@@ -53,14 +53,9 @@ def set_up_database() -> None:
     host = user = password = ""
 
     print("Let's make sure the database is set up correctly!")
-    # host = input("Enter the host, default is localhost, press enter to accept default: ")
-    # user = input("Enter the current user, default is root, press enter to accept default: ")
-    # password = input("Enter the password for the current user: ")
-
-    # my login info for testing, remove before push
-    host = "localhost"
-    user = "root"
-    password = "Maushold105!"
+    host = input("Enter the host, default is localhost, press enter to accept default: ")
+    user = input("Enter the current user, default is root, press enter to accept default: ")
+    password = input("Enter the password for the current user: ")
 
     host = "localhost" if host == "" else host
     user = "root" if user == "" else user
@@ -218,7 +213,7 @@ def add_to_users(username: str, password: str) -> None:
     with _DB.cursor() as cursor:
         cursor.execute(
             """INSERT INTO Account(account_name, favorite_movie, watch_count, passphrase)
-            VALUES (%(username)s, 25, 0, %(password)s);""",
+            VALUES (%(username)s, 1, 0, %(password)s);""",
             {
                 "username": username.lower(),
                 "password": password.lower(),
