@@ -2,6 +2,7 @@ import hashlib
 import utilities.utils as utils
 from utilities.movie import Movie
 from utilities.collection import Collection
+import sys
 
 
 def home_page() -> None:
@@ -14,7 +15,7 @@ def home_page() -> None:
         {"Search the catalog": search},
         {"View and edit profile": view_and_edit},
         {"View my lists": lists},
-        {"Log out": quit},
+        {"Log out": log_out},
     ]
 
     if not utils.get_current_user():
@@ -44,7 +45,7 @@ def log_movie() -> None:
         # get the rating
         while 1:
             try:
-                rating = float(input("Enter a star rating 1-5, including partial values"))
+                rating = float(input("Enter a star rating 0.0-5, including partial values: "))
                 if rating < 0.0:
                     print("Sorry, we know it's bad, but you can't give a negative rating")
                 elif rating > 5.0:
@@ -54,9 +55,9 @@ def log_movie() -> None:
             except Exception:
                 print("Unrecognized input, please try again")
 
-        # get the text review - TODO: how do we handle someone reviewing more than 250 characters? retype it? cut if off?
-        review = input("Enter your review of the movie (max 250 characters): ")
-        utils.add_log(movie_id, rating, review)
+        utils.add_log(movie_id, rating)
+        print(f"you've successfully logged {utils.search_for_movie_by_id(movie_id).get_title()}")
+        input("Press enter to return to homepage: ")
 
     utils.clear_terminal()
     print("|-- Log Movie --|")
@@ -87,31 +88,31 @@ def add_movie(name: str = None) -> Movie:
 
     title = ""
     id = -1
-    genres = []
     runtime = 0
     crew = {}
     score = []
 
     while id is not None:
         title = input("Enter movie name: ") if name is None else name
+        if len(title) > utils.MAX_MOVIE_TITLE_LENGTH:
+            print(
+                "Error, that title is too long for us to handle. Consider adding a movie with a shorter title."
+            )
+            continue
+
         if id := utils.search_for_movie_by_title_exact(title):
             print(
                 "That movie already exists in the database. If there is a duplicate name, try adding the year afterwards in parenthesis"
             )
             if (
                 input(
-                    "Would you like to continue adding a movie? Type 1 for yes, anything else to return to homepage: "
+                    "Would you like to continue adding a movie? Type 1 for yes, enter to return to homepage: "
                 )
-                == "1"
+                != "1"
             ):
                 return None
-
-    # get list of genres
-    raw_genre = input(
-        "Enter the genre(s) of this movie. For multiple genres, seperate them with a comma: "
-    )
-    raw_genre = raw_genre.replace(" ", "")
-    genres = raw_genre.split(",")
+        else:
+            break
 
     # get runtime
     while 1:
@@ -124,31 +125,53 @@ def add_movie(name: str = None) -> Movie:
         except Exception:
             print("Unrecognized input, try again")
 
+    hours = runtime // 60
+    minutes = runtime % 60
+    runtime = ((hours * 100) + minutes) * 100
+
     # Get the crew
     print("|-- Crew Entry --|")
     while 1:
-        name = input("Enter the name of a crew member: ")
-        raw_roles = input(
-            f"Enter the jobs {name} did on this movie. For multiple roles, seperate them with a comma: "
-        )
-        raw_roles = raw_roles.replace(" ", "")
-        crew[name] = raw_roles.split(",")
+        tmp = []
+        name = role = ""
+        # get name
+        while 1:
+            name = input("Enter the name of a crew member: ")
+            if len(name) <= utils.MAX_CREW_NAME_LENGTH:
+                break
+            print("Error - that name is too long for our database. Try another crew member")
+
+        # get role
+        while 1:
+            role = input(f"Enter the job {name} did on this movie: ")
+            if len(name) <= utils.MAX_JOB_LENGTH:
+                break
+            print("Error - that job title is too long for our database. Try another one")
+        tmp.append(role)
+        crew[name] = tmp
         print(f"Would you like to add another crew member?")
-        if input("Type 1 for yes, anything else to finish adding crew members: ") != "1":
+        if input("Type 1 for yes, enter to finish adding crew members: ") != "1":
             break
 
     # Get the score
     print("Enter the score song by song:")
     while 1:
-        song = input("Enter the name of a song: ")
+        while 1:
+            song = input("Enter the name of a song: ")
+            if len(song) <= utils.MAX_SONG_NAME_LENGTH:
+                break
+            print("Error - that song title is too long for our database. Please try a shorter one")
         score.append(song)
         print(f"Would you like to add another song?")
-        if input("Type 1 for yes, anything else to finish adding crew members: ") != "1":
+        if input("Type 1 for yes, enter to finish adding songs: ") != "1":
             break
 
     # add the movie
-    new_movie = Movie(title, genres, runtime, crew, score)
-    utils.add_movie_to_database(new_movie)
+    new_movie = Movie(-1, title, runtime, 0, 0, -1, crew, score)
+    new_movie = utils.add_movie_to_database(new_movie)
+    print(f"You've successfully added {title} to the database!")
+    new_movie.display_movie()
+    input("Press enter to return to home screen")
     return new_movie
 
 
@@ -169,26 +192,12 @@ def search() -> None:
             print(f'Sorry, could not find any movies with "{term}" in the title')
         input("Type anything to return to search menu: ")
 
-    def _sort_genre() -> None:
-        """Searches by genre"""
-        utils.clear_terminal()
-        print("|-- Seach Movie by Genre --|")
-        term = input("Enter your search term: ")
-        movies = utils.search_by_genre(term)
-        if movies:
-            for m in movies:
-                m.display_movie()
-                print()
-        else:
-            print(f'Sorry, could not find any movies where the genre matched the term "{term}"')
-        input("Type anything to return to search menu: ")
-
     def _sort_crew() -> None:
         """Searches by crew members"""
         utils.clear_terminal()
         print("|-- Seach Movie by Crew --|")
         term = input("Enter your search term: ")
-        movies = utils.search_by_crew(term)
+        movies = utils.search_by_crew_inexact(term)
         if movies:
             for m in movies:
                 m.display_movie()
@@ -202,7 +211,7 @@ def search() -> None:
         utils.clear_terminal()
         print("|-- Seach Movie by Score --|")
         term = input("Enter your search term: ")
-        movies = utils.search_by_score(term)
+        movies = utils.search_by_score_inexact(term)
         if movies:
             for m in movies:
                 m.display_movie()
@@ -219,7 +228,6 @@ def search() -> None:
 
     options = [
         {"Search by title": _sort_title},
-        {"Search by genre": _sort_genre},
         {"Search by crew": _sort_crew},
         {"Search by score": _sort_score},
         {"Go back": _go_back},
@@ -561,3 +569,9 @@ def lists() -> None:
             utils.take_cli_input_with_options(options)()
         except utils.GoBackException:
             return
+
+
+def log_out() -> None:
+    """Gracefully disconnect from the database and close the app"""
+    utils.disconnect_database()
+    quit()

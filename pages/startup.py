@@ -16,8 +16,6 @@ def start_up():
     utils.clear_terminal()
     print("What would you like to do?")
     user = utils.take_cli_input_with_options(options)().lower()
-    testUser = utils.get_current_user()
-    #print(f"|__ {testUser.get_username()}'s Profile --|")
     utils.set_current_user(user)
 
 
@@ -35,12 +33,11 @@ def sign_up() -> str:
 
     # get username
     while 1:
-        username = input("Enter your username (max 32 characters): ").lower()
+        username = input(
+            f"Enter your username (max {utils.MAX_USERNAME_LENGTH} characters): "
+        ).lower()
         if len(username) <= utils.MAX_USERNAME_LENGTH:
-            
-            # SANITIZE USER INPUT
-            # SQL QUERY TO CHECK FOR EXITING USERNAME
-            
+
             if not utils.user_exists(username):
                 break
             print("Sorry, a user with that name already exists, please choose another one")
@@ -49,16 +46,13 @@ def sign_up() -> str:
 
     # get password
     while 1:
-        password = input("Enter your password (max 32 characters): ")
+        password = input(f"Enter your password (max {utils.MAX_PASSWORD_LENGTH} characters): ")
         if len(password) <= utils.MAX_PASSWORD_LENGTH:
             break
         print("Sorry, that password is too long, please try again")
 
     # hash password
     hashed_password = hashlib.sha256(password.encode()).hexdigest()
-
-    # SANITIZE USER PASSWORD
-    # SQL QUERY TO ADD PASSWORD
 
     utils.add_to_users(username, hashed_password)
     return username
@@ -75,18 +69,13 @@ def log_in() -> str:
     failed_attempts = 0
     max_failed_attempts = 3
 
-    # TODO: May want to restructure this to do just 1 SQL lookup instead of 2
-
     utils.clear_terminal()
     print("|-- Log In To Betterboxd --|")
 
     # get the username
     while 1:
         username = input("Enter your username: ")
-
-        # replace me with an SQL lookup
-
-        if utils.user_exists(username):
+        if len(password) > utils.MAX_USERNAME_LENGTH and utils.user_exists(username):
             break
 
         print("User not found, try again")
@@ -106,8 +95,6 @@ def log_in() -> str:
     while 1:
         password = input("Enter your password: ")
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
-
-        # replace me with an SQL lookup
         if utils.password_correct(username, hashed_password):
             break
 

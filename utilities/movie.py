@@ -3,27 +3,26 @@ import utilities.utils as utils
 
 
 class Movie:
-    _movie_id_counter = 0
 
     def __init__(
         self,
+        id: int,
         title: str,
-        genres: List[str],
         runtime: int,
-        crew: Dict[str, List[str]],
-        score: List[str],
-        star_ratings: List[float] = None,
-        text_reviews: Dict[int, List[str]] = None,
+        avg_rating: float,
+        num_ratings: int,
+        score_id: int = -1,
+        crew: Dict[str, List[str]] = None,
+        score: List[str] = None,
     ):
-        self._movie_id_counter += 1
-        self._id = self._movie_id_counter
+        self._id = id
         self._title = title
-        self._genres = genres
         self._runtime = runtime
+        self._avg_rating = avg_rating
+        self._num_ratings = num_ratings
         self._crew = crew
         self._score = score
-        self._star_ratings = star_ratings
-        self._text_reviews = text_reviews
+        self._score_id = score_id
 
     def get_id(self) -> int:
         """Getter for id"""
@@ -33,71 +32,72 @@ class Movie:
         """Getter for title"""
         return self._title
 
-    def get_genres(self) -> List[str]:
-        """Getter for genre"""
-        return self._genres
-
     def get_runtime(self) -> int:
         """Getter for runtime"""
         return self._runtime
+
+    def get_avg_rating(self) -> float:
+        """Getter for star avg_ratings"""
+        return self._avg_rating
+
+    def get_num_rating(self) -> int:
+        """Getter for number of ratings"""
+        return self._num_ratings
 
     def get_crew(self) -> Dict[str, List[str]]:
         """Getter for crew"""
         return self._crew
 
+    def set_crew(self, crew: Dict[str, List[str]]) -> None:
+        """Setter for crew
+
+        Args:
+            crew - a dictionary with "crew_name" : ["crew_job1", ...] pairs
+        """
+        self._crew = crew
+
+    def add_crew_member(self, name: str, roles: List[str]) -> None:
+        """Adds one crew member to the existing crew
+
+        Args:
+            name - name of crew member (key)
+            roles - list of roles (values)
+        """
+        self._crew[name] = roles
+
     def get_score(self) -> List[str]:
         """Getter for score"""
         return self._score
 
-    def get_star_ratings(self) -> List[float]:
-        """Getter for star ratings"""
-        return self._star_ratings
+    def get_score_id(self) -> int:
+        """Getter for score id"""
+        return self._score_id
 
-    def get_text_reviews(self) -> Dict[int, str]:
-        """Getter for text reviews"""
-        return self._text_reviews
-
-    def add_star_rating(self, rating: float) -> None:
-        """Adds a new rating to the movie
+    def set_score(self, score_id: int, score: List[str]) -> None:
+        """Setter for score
 
         Args:
-            rating - a float representing a new star rating
+            score_id - an int representing the score ID
+            score - a list of song titles
         """
-        self._star_ratings.append(rating)
+        self._score_id = score_id
+        self._score = score
 
-    def add_text_review(self, user_id: int, review: str) -> None:
-        """Adds a new review to the movie
+    def add_rating(self, rating: float) -> None:
+        """Adds a rating
 
         Args:
-            user_id - an int representing which user left the review
-            review - the text of the review
+            rating - a float representing a new rating
         """
-        if self._text_reviews.get(user_id, None) == None:
-            self._text_reviews[user_id] = []
-        self._text_reviews[user_id].append(review)  # A user can review a movie n times
-
-    def calculate_rating(self) -> float:
-        """Determines aggregated star rating"""
-        try:
-            return sum(self._star_ratings) / len(self._star_ratings)
-        except ZeroDivisionError:
-            return 0.0
-
-    def get_review_by_user_id(self, user_id: int) -> List[str]:
-        """Given a user ID, return any reviews by that account
-
-        Args:
-            user_id - an int representing which user we're looking at
-        """
-        return self._text_reviews.get(user_id, None)
+        total_score = self._avg_rating * self._num_ratings
+        new_total_score = total_score + rating
+        self._num_ratings += 1
+        self._avg_rating = new_total_score / self._num_ratings
 
     def display_movie(self) -> None:
         """Pretty print the movie class"""
         print(f"ID: {self._id}")
         print(f"Title: {self._title}")
-        print(f"Genres:")
-        for g in self._genres:
-            print(f"\t{g}")
         print(f"Run time: {self._runtime}")
         print(f"Crew:")
         for k, v in self._crew.items():
@@ -105,13 +105,5 @@ class Movie:
         print(f"Score:")
         for s in self._score:
             print(f"\t {s}")
-        print(f"Star Rating (calculated): {self.calculate_rating()}")
-        print(f"Star Rating (raw):", end=" ")
-        for r in self._star_ratings:
-            print(r, end=" ")
+        print(f"Star Rating: {self._avg_rating}")
         print()
-        print("Text Reviews: ")
-        for k, v in self._text_reviews.items():
-            print(f"\tReviews from user {k}:")
-            for i, r in enumerate(v):
-                print(f"\t\t{i}. {r}")
