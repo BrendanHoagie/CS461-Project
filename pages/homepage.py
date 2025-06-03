@@ -267,12 +267,12 @@ def view_and_edit() -> None:
         user = utils.get_current_user()
         title = input("Enter the name of a movie: ")
         if id := utils.search_for_movie_by_title_exact(title):
-            user.set_fav_movie_id(id)
+            utils.update_favorite_movie(id)
             return
 
         print(f"We couldn't find the movie {title} in our database, would you like to add it?")
         if input("Type 1 for yes, anything else to return to the account page: ") == "1":
-            user.set_fav_movie_id(add_movie().get_id())
+            utils.update_favorite_movie(add_movie().get_id())
 
     def _change_password() -> None:
         """Updates a user's password"""
