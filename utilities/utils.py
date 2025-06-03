@@ -30,7 +30,6 @@ MAX_JOB_LENGTH = 32
 MAX_CREW_NAME_LENGTH = 128
 MAX_SONG_NAME_LENGTH = 128
 MAX_MOVIE_TITLE_LENGTH = 128
-MAX_COLLECTION_NAME_LENGTH = 32
 MAX_PASSPHRASE_LENGTH = 64
 
 
@@ -264,7 +263,8 @@ def update_password(password):
         except Exception as e:
             _DB.rollback()
             raise Exception(f"Password update failed: {str(e)}")
-        
+
+
 def update_favorite_movie(movie_id: int):
     """SQL Updater for favorite Movie.
 
