@@ -101,7 +101,8 @@ def disconnect_database() -> None:
     """Safely disconnects from database and clears globals"""
     global _DB
     global _CURRENT_USER
-
+    if _DB is None:
+        return
     _DB.close()
     _DB = None
     _CURRENT_USER = None
