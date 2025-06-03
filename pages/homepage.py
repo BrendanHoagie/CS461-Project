@@ -313,7 +313,7 @@ def view_and_edit() -> None:
             hashed_password = hashlib.sha256(password.encode()).hexdigest()
             if user.check_password(hashed_password):
                 utils.delete_current_user()
-                quit()
+                log_out()
 
             print("Sorry, that password does not match, please try again")
             num_attempts += 1

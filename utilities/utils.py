@@ -60,7 +60,7 @@ def set_up_database() -> None:
     # my login info for testing, remove before push
     host = "localhost"
     user = "root"
-    password = "*Brendan10!"
+    password = "Maushold105!"
 
     host = "localhost" if host == "" else host
     user = "root" if user == "" else user
@@ -163,7 +163,47 @@ def delete_current_user() -> None:
     """Deletes the current user from the database and un-sets current user.
     Will break many parts of the homepage, use carefully
     """
-    _USERS.remove(_CURRENT_USER)
+    global _CURRENT_USER
+
+    with _DB.cursor() as cursor:
+        try:
+            # 1. Get all collection IDs owned by this user (using named parameters)
+            cursor.execute(
+                """SELECT collection_ID 
+                   FROM Account_Collections 
+                   WHERE account_name = %(username)s;""",
+                {"username": _CURRENT_USER.get_username().lower()}
+            )
+            collection_ids = [row[0] for row in cursor.fetchall()]
+
+            # 2. Delete entries in those collections (using tuple for IN clause)
+            if collection_ids:
+                cursor.execute(
+                    """DELETE FROM Entry 
+                       WHERE collection_ID IN %(collection_ids)s;""",
+                    {"collection_ids": tuple(collection_ids)}  # Note: Must be a tuple
+                )
+
+            # 3. Remove account->collection mappings
+            cursor.execute(
+                """DELETE FROM Account_Collections 
+                   WHERE account_name = %(username)s;""",
+                {"username": _CURRENT_USER.get_username().lower()}
+            )
+
+            # 4. Finally delete the account
+            cursor.execute(
+                """DELETE FROM Account 
+                   WHERE account_name = %(username)s;""",
+                {"username": _CURRENT_USER.get_username().lower()}
+            )
+
+            _DB.commit()
+            _CURRENT_USER = None  # Clear current user
+
+        except Exception as e:
+            _DB.rollback()
+            raise Exception(f"Account deletion failed: {str(e)}")
 
 
 def add_to_users(username: str, password: str) -> None:
