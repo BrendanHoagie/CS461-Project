@@ -39,7 +39,7 @@ class User:
         """
         return self._password == password
 
-    def set_password(self, password):
+    def set_password(self, password: str):
         """Setter for password.
         This function does not hash, always pass in a hashed string
 

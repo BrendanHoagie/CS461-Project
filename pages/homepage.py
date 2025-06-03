@@ -293,7 +293,7 @@ def view_and_edit() -> None:
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
 
         # update password (replace w/ sql)
-        user.set_password(hashed_password)
+        utils.update_password(hashed_password)
 
     def _delete_account() -> None:
         """Deletes the account and logs the user out

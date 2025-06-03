@@ -267,6 +267,30 @@ def password_correct(username: str, password: str) -> bool:
         result = cursor.fetchone()[0]
         return result == password
 
+def update_password(password):
+        """SQL Updater for password.
+        This function does not hash, always pass in a hashed string
+
+        Args:
+            password - a  HASHED string containing the new password.
+        """
+        with _DB.cursor() as cursor:
+            try:
+                cursor.execute(
+                    """UPDATE Account 
+                    SET passphrase = %(password)s 
+                    WHERE account_name = %(username)s;""",
+                    {
+                        "password": password,  # Should be pre-hashed
+                        "username": _CURRENT_USER.get_username().lower()
+                    }
+                )
+
+                _DB.commit()
+                _CURRENT_USER.set_password(password=password)
+            except Exception as e:
+                _DB.rollback()
+                raise Exception(f"Password update failed: {str(e)}")
 
 def search_for_movie_by_title_exact(title: str) -> int:
     """Query if a given movie title is in the database (exact match)
